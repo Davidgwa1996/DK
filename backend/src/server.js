@@ -5,7 +5,7 @@ const morgan = require('morgan');
 const dotenv = require('dotenv');
 const connectDB = require('./config/database');
 const Logger = require('./utils/logger');
-
+-
 // Load environment variables
 dotenv.config();
 
@@ -73,6 +73,57 @@ app.get('/api', (req, res) => {
     documentation: 'Coming soon...'
   });
 });
+// === ADD THESE 3 ROUTES === //
+
+// Root endpoint
+app.get('/', (req, res) => {
+  res.json({
+    success: true,
+    message: '🚀 UniDigital Backend API Server',
+    version: '1.0.0',
+    status: 'operational',
+    timestamp: new Date().toISOString(),
+    documentation: 'https://unidigitalcom-backend1.onrender.com/api',
+    health: 'https://unidigitalcom-backend1.onrender.com/health',
+    endpoints: {
+      root: '/',
+      api: '/api',
+      health: '/health',
+      auth: '/api/auth',
+      products: '/api/products',
+      cart: '/api/cart',
+      orders: '/api/orders',
+      payments: '/api/payments'
+    }
+  });
+});
+
+// Health endpoint (simple, for load balancers)
+app.get('/health', (req, res) => {
+  res.status(200).json({
+    status: 'healthy',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// API welcome endpoint (already exists, but keep it)
+app.get('/api', (req, res) => {
+  res.json({
+    message: 'Welcome to Unidigitalcom API',
+    version: '1.0.0',
+    endpoints: {
+      auth: '/api/auth',
+      products: '/api/products',
+      cart: '/api/cart',
+      orders: '/api/orders',
+      payments: '/api/payments',
+      health: '/api/health'
+    },
+    documentation: 'Coming soon...'
+  });
+});
+
+// === END OF ADDED ROUTES === //
 
 // 404 handler
 app.use(notFound);
