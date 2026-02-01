@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: unidigital-frontend
+    env: static
+    region: ohio
+    plan: free
+    branch: main
+    rootDirectory: frontend
+    buildCommand: npm run build
+    staticPublishPath: build
+    envVars:
+      - key: REACT_APP_API_URL
+        value: https://unidigital-backend.onrender.com/api
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    autoDeploy: true
