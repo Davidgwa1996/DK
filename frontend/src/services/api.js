@@ -1,48 +1,115 @@
-import axios from 'axios';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://api.unidigital.com/v1';
 
-const API = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5000/api',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-// Add token to requests if it exists
-API.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+// Helper function for API calls
+const fetchAPI = async (endpoint, options = {}) => {
+  const token = localStorage.getItem('auth_token');
+  
+  const defaultOptions = {
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      ...(token && { 'Authorization': `Bearer ${token}` }),
+      ...options.headers
     }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
+  };
 
-// Response interceptor for error handling
-API.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      window.location.reload();
+  try {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      ...defaultOptions,
+      ...options
+    });
+
+    if (!response.ok) {
+      throw new Error(`API Error: ${response.status}`);
     }
-    return Promise.reject(error);
-  }
-);
 
-export const productAPI = {
-  getAll: () => API.get('/products'),
-  getFeatured: () => API.get('/products/featured'),
-  getById: (id) => API.get(`/products/${id}`),
+    return await response.json();
+  } catch (error) {
+    console.error('API Request Failed:', error);
+    throw error;
+  }
 };
 
-export const authAPI = {
-  register: (userData) => API.post('/auth/register', userData),
-  login: (credentials) => API.post('/auth/login', credentials),
-  getCurrentUser: () => API.get('/auth/me'),
-};
+export const api = {
+  // Products
+  getProducts: async (params = {}) => {
+    const queryString = new URLSearchParams(params).toString();
+    return fetchAPI(`/products?${queryString}`);
+  },
 
-export default API;
+  getProduct: async (id) => {
+    return fetchAPI(`/products/${id}`);
+  },
+
+  // Categories
+  getCategories: async () => {
+    return fetchAPI('/categories');
+  },
+
+  // Market Data
+  getMarketData: async (country = 'GB') => {
+    return fetchAPI(`/market/trends?country=${country}`);
+  },
+
+  // AI Pricing (Integrated)
+  getAiPricing: async (productId) => {
+    return fetchAPI(`/ai/pricing/${productId}`);
+  },
+
+  // Search Suggestions
+  getSearchSuggestions: async (query) => {
+    return fetchAPI(`/search/suggestions?q=${encodeURIComponent(query)}`);
+  },
+
+  // User & Auth
+  login: async (email, password) => {
+    return fetchAPI('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password })
+    });
+  },
+
+  register: async (userData) => {
+    return fetchAPI('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify(userData)
+    });
+  },
+
+  // Cart
+  syncCart: async (cartItems) => {
+    return fetchAPI('/cart/sync', {
+      method: 'POST',
+      body: JSON.stringify({ items: cartItems })
+    });
+  },
+
+  // Checkout
+  createOrder: async (orderData) => {
+    return fetchAPI('/orders', {
+      method: 'POST',
+      body: JSON.stringify(orderData)
+    });
+  },
+
+  // Shipping
+  calculateShipping: async (address, items) => {
+    return fetchAPI('/shipping/calculate', {
+      method: 'POST',
+      body: JSON.stringify({ address, items })
+    });
+  },
+
+  // Payment
+  createPaymentIntent: async (paymentData) => {
+    return fetchAPI('/payments/intent', {
+      method: 'POST',
+      body: JSON.stringify(paymentData)
+    });
+  },
+
+  // Analytics
+  getAnalytics: async (timeframe = '7d') => {
+    return fetchAPI(`/analytics?timeframe=${timeframe}`);
+  }
+};

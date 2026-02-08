@@ -1,38 +1,102 @@
-// frontend/src/App.js - FINAL VERSION
+
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { CartProvider } from './contexts/CartContext';
-import Layout from './components/Layout';
+import { CartProvider } from './context/CartContext';
+import Layout from './components/Layout'; // Your existing Layout
 import HomePage from './pages/HomePage';
+import ProductsPage from './pages/ProductsPage';
 import ProductDetailPage from './pages/ProductDetailPage';
-import CategoryPage from './pages/CategoryPage';
-import AutomotivePartsPage from './pages/AutomotivePartsPage';
-import ElectronicsPage from './pages/ElectronicsPage';
-import CheckoutPage from './pages/CheckoutPage';
-import PaymentMethodsPage from './pages/PaymentMethodsPage';
 import CartPage from './pages/CartPage';
-import OrderSuccessPage from './pages/OrderSuccessPage';
+import CheckoutPage from './pages/CheckoutPage';
+import CheckoutSuccessPage from './pages/CheckoutSuccessPage';
+import CategoryPage from './pages/CategoryPage';
+import PaymentGateway from './pages/PaymentGateway';
 import ContactPage from './pages/ContactPage';
+import MarketAnalysisPage from './pages/MarketAnalysisPage';
+import AuthPage from './pages/AuthPage';
+import NotFoundPage from './pages/NotFoundPage';
+import './App.css';
 
 function App() {
   return (
     <Router>
       <CartProvider>
-        <Layout>
+        <div className="App">
           <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/product/:id" element={<ProductDetailPage />} />
-            <Route path="/product/:category/:id" element={<ProductDetailPage />} />
-            <Route path="/category/:category" element={<CategoryPage />} />
-            <Route path="/automotive-parts" element={<AutomotivePartsPage />} />
-            <Route path="/electronics" element={<ElectronicsPage />} />
-            <Route path="/checkout" element={<CheckoutPage />} />
-            <Route path="/payment-methods" element={<PaymentMethodsPage />} />
-            <Route path="/cart" element={<CartPage />} />
-            <Route path="/order-success" element={<OrderSuccessPage />} />
-            <Route path="/contact" element={<ContactPage />} />
+            {/* All pages use Layout with header & footer */}
+            <Route path="/" element={
+              <Layout showHeader={true} showFooter={true}>
+                <HomePage />
+              </Layout>
+            } />
+            
+            <Route path="/auth" element={
+              <Layout showHeader={false} showFooter={false}>
+                <AuthPage />
+              </Layout>
+            } />
+            
+            <Route path="/products" element={
+              <Layout showHeader={true} showFooter={true}>
+                <ProductsPage />
+              </Layout>
+            } />
+            
+            <Route path="/product/:id" element={
+              <Layout showHeader={true} showFooter={true}>
+                <ProductDetailPage />
+              </Layout>
+            } />
+            
+            <Route path="/cart" element={
+              <Layout showHeader={true} showFooter={true}>
+                <CartPage />
+              </Layout>
+            } />
+            
+            <Route path="/checkout" element={
+              <Layout showHeader={true} showFooter={false}>
+                <CheckoutPage />
+              </Layout>
+            } />
+            
+            <Route path="/checkout-success" element={
+              <Layout showHeader={true} showFooter={true}>
+                <CheckoutSuccessPage />
+              </Layout>
+            } />
+            
+            <Route path="/category/:category" element={
+              <Layout showHeader={true} showFooter={true}>
+                <CategoryPage />
+              </Layout>
+            } />
+            
+            <Route path="/payment" element={
+              <Layout showHeader={true} showFooter={true}>
+                <PaymentGateway />
+              </Layout>
+            } />
+            
+            <Route path="/contact" element={
+              <Layout showHeader={true} showFooter={true}>
+                <ContactPage />
+              </Layout>
+            } />
+            
+            <Route path="/market-analysis" element={
+              <Layout showHeader={true} showFooter={true}>
+                <MarketAnalysisPage />
+              </Layout>
+            } />
+            
+            <Route path="*" element={
+              <Layout showHeader={true} showFooter={true}>
+                <NotFoundPage />
+              </Layout>
+            } />
           </Routes>
-        </Layout>
+        </div>
       </CartProvider>
     </Router>
   );

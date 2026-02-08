@@ -1,19 +1,18 @@
 import React from 'react';
-import Header from './Header';
-import Footer from './Footer';
-import SearchBar from './SearchBar';
-import CartSidebar from './CartSidebar';
+import Header from './ModernHeader';
+import Footer from './ModernFooter';
+import './Layout.css';
 
-function Layout({ children }) {
+function Layout({ children, showHeader = true, showFooter = true }) {
   return (
-    <div className="app">
-      <Header />
-      <SearchBar /> {/* Add search bar here */}
+    <div className="layout">
+      {showHeader && <Header />}
       <main className="main-content">
-        {children}
+        <div className="container">
+          {children}
+        </div>
       </main>
-      <CartSidebar />
-      <Footer />
+      {showFooter && <Footer />}
     </div>
   );
 }
