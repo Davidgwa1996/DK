@@ -1,4 +1,3 @@
-# docker-compose.yml
 version: '3.8'
 
 services:
@@ -7,15 +6,16 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "3000:3000"
-    volumes:
-      - ./:/app
-      - /app/node_modules
-      - /app/build
+      - "80:80"  # Change from 3000 to 80 for production
+    # REMOVE all volumes - not needed for production
+    # volumes:
+    #   - ./:/app
+    #   - /app/node_modules
+    #   - /app/build
     environment:
-      - NODE_ENV=development
-      - CHOKIDAR_USEPOLLING=true
-      - WATCHPACK_POLLING=true
-    stdin_open: true
-    tty: true
-    command: npm start
+      - NODE_ENV=production  # Change from development
+      - PORT=80
+    # REMOVE development settings:
+    # stdin_open: true
+    # tty: true
+    # command: npm start
