@@ -1,9 +1,8 @@
-import React from 'react';
-import Header from '../components/ModernHeader';
-import Footer from '../components/ModernFooter';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
-import { Trash2, Plus, Minus, ShoppingBag, ArrowLeft, Shield, Truck, CreditCard } from 'lucide-react';
+import { Trash2, Plus, Minus, ShoppingBag, ArrowLeft, Shield, Truck, CreditCard, Lock, Globe, X } from 'lucide-react';
+import './CartPage.css'; // We'll create this CSS file
 
 function CartPage() {
   const navigate = useNavigate();
@@ -14,11 +13,15 @@ function CartPage() {
     clearCart, 
     cartTotal, 
     getCartCount,
-    taxAmount,
-    shippingAmount,
-    grandTotal,
+    taxAmount = cartTotal * 0.08, // Default tax if not provided
+    shippingAmount = cartTotal > 1000 ? 0 : 49.99, // Default shipping
+    grandTotal = cartTotal + (cartTotal * 0.08) + (cartTotal > 1000 ? 0 : 49.99),
     isCartEmpty
   } = useCart();
+
+  const [showPaymentOptions, setShowPaymentOptions] = useState(false);
+  const [selectedPayment, setSelectedPayment] = useState(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const handleQuantityChange = (productId, newQuantity) => {
     if (newQuantity >= 1) {
@@ -27,143 +30,213 @@ function CartPage() {
   };
 
   const handleCheckout = () => {
-    navigate('/checkout');
+    setShowPaymentOptions(true);
   };
 
   const handleContinueShopping = () => {
-    navigate('/products');
+    navigate('/');
   };
+
+  const handlePaymentSelection = (paymentMethod) => {
+    setSelectedPayment(paymentMethod);
+  };
+
+  const handleConfirmPayment = () => {
+    if (!selectedPayment) {
+      alert('Please select a payment method');
+      return;
+    }
+    
+    // Process payment and navigate to success page
+    alert(`Payment with ${selectedPayment.toUpperCase()} confirmed! Thank you for your purchase.`);
+    clearCart();
+    navigate('/checkout-success');
+  };
+
+  const paymentMethods = [
+    { id: 'card', name: 'Credit/Debit Card', icon: '💳', description: 'Visa, Mastercard, Amex' },
+    { id: 'paypal', name: 'PayPal', icon: '🔵', description: 'Secure PayPal payment' },
+    { id: 'apple', name: 'Apple Pay', icon: '', description: 'Apple Pay & Apple Card' },
+    { id: 'google', name: 'Google Pay', icon: 'G', description: 'Google Wallet' },
+    { id: 'bank', name: 'Bank Transfer', icon: '🏦', description: 'Direct bank transfer' },
+    { id: 'crypto', name: 'Cryptocurrency', icon: '₿', description: 'BTC, ETH, USDC' }
+  ];
+
+  const MobileMenu = () => (
+    <>
+      <div className={`mobile-menu-overlay ${isMobileMenuOpen ? 'active' : ''}`} 
+           onClick={() => setIsMobileMenuOpen(false)} />
+      <div className={`mobile-menu-panel ${isMobileMenuOpen ? 'active' : ''}`}>
+        <div className="mobile-menu-header">
+          <h2 style={{color: '#00e5ff'}}>Cart Menu</h2>
+          <button className="mobile-menu-close" onClick={() => setIsMobileMenuOpen(false)}>
+            <X className="h-6 w-6" />
+          </button>
+        </div>
+        <div className="mobile-nav-items">
+          <button onClick={() => { navigate('/'); setIsMobileMenuOpen(false); }} className="mobile-nav-item">
+            🏠 Home
+          </button>
+          <button onClick={() => { navigate('/products'); setIsMobileMenuOpen(false); }} className="mobile-nav-item">
+            🛍️ All Products
+          </button>
+          <button onClick={() => { navigate('/cart'); setIsMobileMenuOpen(false); }} className="mobile-nav-item">
+            🛒 View Cart
+          </button>
+          <button onClick={() => { navigate('/checkout'); setIsMobileMenuOpen(false); }} className="mobile-nav-item">
+            💳 Checkout
+          </button>
+          <button onClick={() => { navigate('/contact'); setIsMobileMenuOpen(false); }} className="mobile-nav-item">
+            📞 Contact
+          </button>
+          <button onClick={clearCart} className="mobile-nav-item text-red-500">
+            🗑️ Clear Cart
+          </button>
+        </div>
+      </div>
+    </>
+  );
 
   if (isCartEmpty) {
     return (
-      <div className="min-h-screen flex flex-col">
-        <Header />
-        <main className="flex-grow py-12">
-          <div className="container mx-auto px-4">
-            <div className="max-w-4xl mx-auto">
-              <h1 className="text-4xl font-bold text-gray-900 mb-8">Shopping Cart</h1>
-              
-              <div className="bg-white rounded-2xl shadow-lg p-12 text-center">
-                <div className="w-24 h-24 mx-auto bg-gray-100 rounded-full flex items-center justify-center mb-6">
-                  <ShoppingBag className="h-12 w-12 text-gray-400" />
-                </div>
-                <h2 className="text-2xl font-bold text-gray-800 mb-4">Your cart is empty</h2>
-                <p className="text-gray-600 mb-8 max-w-md mx-auto">
-                  Looks like you haven't added any items to your cart yet. Start shopping to find amazing products!
-                </p>
-                <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <button 
-                    onClick={() => navigate('/')}
-                    className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-8 py-3 rounded-xl font-medium hover:from-blue-700 hover:to-blue-800 transition-all"
-                  >
-                    Continue Shopping
-                  </button>
-                  <button 
-                    onClick={() => navigate('/products')}
-                    className="border-2 border-gray-300 text-gray-700 px-8 py-3 rounded-xl font-medium hover:bg-gray-50 transition-all"
-                  >
-                    Browse Products
-                  </button>
-                </div>
-              </div>
-            </div>
+      <div className="cart-page">
+        <MobileMenu />
+        
+        {/* Mobile Menu Button */}
+        <button 
+          className="mobile-menu-toggle"
+          onClick={() => setIsMobileMenuOpen(true)}
+        >
+          ☰ Menu
+        </button>
+
+        <div className="cart-container empty-cart">
+          <div className="empty-cart-icon">
+            <ShoppingBag className="h-20 w-20" />
           </div>
-        </main>
-        <Footer />
+          <h1 className="empty-cart-title">Your cart is empty</h1>
+          <p className="empty-cart-description">
+            Add some products from our global marketplace
+          </p>
+          <div className="empty-cart-actions">
+            <button 
+              onClick={handleContinueShopping}
+              className="btn btn-primary"
+            >
+              Continue Shopping
+            </button>
+            <button 
+              onClick={() => navigate('/products')}
+              className="btn btn-secondary"
+            >
+              Browse Products
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header />
-      <main className="flex-grow py-12">
-        <div className="container mx-auto px-4">
-          <div className="max-w-7xl mx-auto">
-            <div className="flex items-center justify-between mb-8">
-              <div>
-                <h1 className="text-4xl font-bold text-gray-900">Shopping Cart</h1>
-                <p className="text-gray-600 mt-2">{getCartCount()} items in your cart</p>
+    <div className="cart-page">
+      <MobileMenu />
+      
+      {/* Mobile Menu Button */}
+      <button 
+        className="mobile-menu-toggle"
+        onClick={() => setIsMobileMenuOpen(true)}
+      >
+        ☰ Menu
+      </button>
+
+      {/* Header */}
+      <header className="cart-header">
+        <div className="container">
+          <div className="header-content">
+            <div className="logo">
+              <Globe className="h-6 w-6 text-blue-500" />
+              <span>UniDigital Cart</span>
+            </div>
+            <button 
+              className="cart-icon-header"
+              onClick={() => navigate('/cart')}
+            >
+              🛒
+              {getCartCount() > 0 && (
+                <span className="cart-count">{getCartCount()}</span>
+              )}
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <main className="cart-main">
+        <div className="container">
+          <div className="cart-content">
+            <div className="cart-header-section">
+              <h1 className="cart-title">Shopping Cart</h1>
+              <div className="cart-info">
+                <span className="cart-count-badge">{getCartCount()} items</span>
+                <button 
+                  onClick={clearCart}
+                  className="clear-cart-btn"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Clear Cart
+                </button>
               </div>
-              <button 
-                onClick={clearCart}
-                className="flex items-center gap-2 text-red-600 hover:text-red-700 font-medium"
-              >
-                <Trash2 className="h-5 w-5" />
-                Clear Cart
-              </button>
             </div>
 
-            <div className="grid lg:grid-cols-3 gap-8">
-              {/* Cart Items */}
-              <div className="lg:col-span-2">
-                <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
+            <div className="cart-layout">
+              {/* Cart Items - Left Column */}
+              <div className="cart-items-section">
+                <div className="cart-items-container">
                   {cart.map((item) => (
-                    <div key={item.id} className="flex flex-col sm:flex-row gap-6 py-6 border-b border-gray-200 last:border-0">
-                      {/* Product Image */}
-                      <div className="sm:w-32 sm:h-32 w-full h-48 bg-gray-100 rounded-xl overflow-hidden">
+                    <div key={item.id} className="cart-item">
+                      <div className="cart-item-image">
                         {item.image ? (
-                          <img 
-                            src={item.image} 
-                            alt={item.name} 
-                            className="w-full h-full object-cover"
-                          />
+                          <img src={item.image} alt={item.name} />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50">
-                            <ShoppingBag className="h-12 w-12 text-gray-400" />
-                          </div>
+                          <div className="item-icon">{item.icon || '📦'}</div>
                         )}
                       </div>
-
-                      {/* Product Details */}
-                      <div className="flex-1">
-                        <div className="flex justify-between">
-                          <div>
-                            <h3 className="text-lg font-semibold text-gray-900 mb-2">{item.name}</h3>
-                            <p className="text-gray-600 text-sm mb-3 line-clamp-2">{item.description || 'No description available'}</p>
-                            <div className="flex items-center gap-4">
-                              <span className="text-2xl font-bold text-gray-900">
-                                ${item.price.toFixed(2)}
-                              </span>
-                              {item.originalPrice && (
-                                <span className="text-lg text-gray-400 line-through">
-                                  ${item.originalPrice.toFixed(2)}
-                                </span>
-                              )}
-                            </div>
-                          </div>
+                      
+                      <div className="cart-item-details">
+                        <div className="cart-item-header">
+                          <h3 className="cart-item-name">{item.name}</h3>
                           <button 
                             onClick={() => removeFromCart(item.id)}
-                            className="h-8 w-8 flex items-center justify-center text-gray-400 hover:text-red-500"
+                            className="remove-item-btn"
                           >
-                            <Trash2 className="h-5 w-5" />
+                            <Trash2 className="h-4 w-4" />
                           </button>
                         </div>
-
-                        {/* Quantity Controls */}
-                        <div className="flex items-center justify-between mt-6">
-                          <div className="flex items-center gap-3">
+                        
+                        <div className="cart-item-meta">
+                          <span className="cart-item-category">{item.category}</span>
+                          <span className="cart-item-market">{item.market || 'Global'}</span>
+                        </div>
+                        
+                        <div className="cart-item-price">${item.price.toLocaleString()}</div>
+                        
+                        <div className="cart-item-controls">
+                          <div className="quantity-control">
                             <button 
                               onClick={() => handleQuantityChange(item.id, item.quantity - 1)}
-                              className="w-10 h-10 flex items-center justify-center rounded-lg border border-gray-300 hover:bg-gray-50"
+                              className="quantity-btn"
                             >
-                              <Minus className="h-4 w-4" />
+                              <Minus className="h-3 w-3" />
                             </button>
-                            <span className="w-16 text-center font-medium">{item.quantity}</span>
+                            <span className="quantity-value">{item.quantity}</span>
                             <button 
                               onClick={() => handleQuantityChange(item.id, item.quantity + 1)}
-                              className="w-10 h-10 flex items-center justify-center rounded-lg border border-gray-300 hover:bg-gray-50"
+                              className="quantity-btn"
                             >
-                              <Plus className="h-4 w-4" />
+                              <Plus className="h-3 w-3" />
                             </button>
                           </div>
-                          <div className="text-right">
-                            <div className="text-lg font-bold text-gray-900">
-                              ${(item.price * item.quantity).toFixed(2)}
-                            </div>
-                            <div className="text-sm text-gray-500">
-                              ${item.price.toFixed(2)} each
-                            </div>
+                          <div className="cart-item-total">
+                            ${(item.price * item.quantity).toLocaleString()}
                           </div>
                         </div>
                       </div>
@@ -171,119 +244,131 @@ function CartPage() {
                   ))}
                 </div>
 
-                {/* Continue Shopping */}
-                <div className="flex items-center justify-between">
+                <div className="continue-shopping">
                   <button 
                     onClick={handleContinueShopping}
-                    className="flex items-center gap-2 text-gray-700 hover:text-gray-900 font-medium"
+                    className="back-to-shopping-btn"
                   >
-                    <ArrowLeft className="h-5 w-5" />
+                    <ArrowLeft className="h-4 w-4" />
                     Continue Shopping
                   </button>
-                  <div className="text-lg">
-                    <span className="text-gray-600">Subtotal:</span>
-                    <span className="ml-2 text-2xl font-bold text-gray-900">${cartTotal.toFixed(2)}</span>
-                  </div>
                 </div>
               </div>
 
-              {/* Order Summary */}
-              <div className="lg:col-span-1">
-                <div className="bg-white rounded-2xl shadow-lg p-6 sticky top-6">
-                  <h2 className="text-2xl font-bold text-gray-900 mb-6">Order Summary</h2>
+              {/* Order Summary - Right Column */}
+              <div className="order-summary-section">
+                <div className="order-summary-card">
+                  <h2 className="order-summary-title">Order Summary</h2>
                   
-                  <div className="space-y-4 mb-6">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Subtotal</span>
-                      <span className="font-medium">${cartTotal.toFixed(2)}</span>
+                  <div className="order-breakdown">
+                    <div className="breakdown-row">
+                      <span>Subtotal</span>
+                      <span>${cartTotal.toLocaleString()}</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Shipping</span>
-                      <span className="font-medium">
-                        {shippingAmount === 0 ? 'FREE' : `$${shippingAmount.toFixed(2)}`}
-                      </span>
+                    <div className="breakdown-row">
+                      <span>Shipping</span>
+                      <span>{shippingAmount === 0 ? 'FREE' : `$${shippingAmount.toFixed(2)}`}</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Tax</span>
-                      <span className="font-medium">${taxAmount.toFixed(2)}</span>
+                    <div className="breakdown-row">
+                      <span>Tax (8%)</span>
+                      <span>${taxAmount.toFixed(2)}</span>
                     </div>
-                  </div>
-
-                  <div className="border-t border-gray-200 pt-4 mb-6">
-                    <div className="flex justify-between text-lg font-bold">
+                    
+                    <div className="breakdown-total">
                       <span>Total</span>
-                      <span className="text-2xl">${grandTotal.toFixed(2)}</span>
-                    </div>
-                    <p className="text-sm text-gray-500 mt-2">Including all taxes and fees</p>
-                  </div>
-
-                  <button 
-                    onClick={handleCheckout}
-                    className="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white py-4 rounded-xl font-bold text-lg mb-4 hover:from-green-600 hover:to-emerald-700 transition-all"
-                  >
-                    Proceed to Checkout
-                  </button>
-
-                  <div className="space-y-4 mt-6">
-                    <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg">
-                      <Shield className="h-5 w-5 text-blue-600" />
-                      <span className="text-sm text-blue-700">Secure payment • 256-bit encryption</span>
-                    </div>
-                    <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg">
-                      <Truck className="h-5 w-5 text-green-600" />
-                      <span className="text-sm text-green-700">Free shipping on orders over $50</span>
-                    </div>
-                    <div className="flex items-center gap-3 p-3 bg-purple-50 rounded-lg">
-                      <CreditCard className="h-5 w-5 text-purple-600" />
-                      <span className="text-sm text-purple-700">Multiple payment methods available</span>
+                      <span className="total-amount">${grandTotal.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
                     </div>
                   </div>
 
-                  <div className="mt-8 pt-6 border-t border-gray-200">
-                    <h3 className="font-medium text-gray-900 mb-3">Need help?</h3>
-                    <div className="space-y-2">
+                  {!showPaymentOptions ? (
+                    <>
                       <button 
-                        onClick={() => navigate('/contact')}
-                        className="text-blue-600 hover:text-blue-700 text-sm block w-full text-left"
+                        onClick={handleCheckout}
+                        className="checkout-btn"
                       >
+                        <Lock className="h-5 w-5" />
+                        Proceed to Payment
+                      </button>
+                      
+                      <div className="payment-security">
+                        <div className="security-item">
+                          <Shield className="h-5 w-5 text-green-500" />
+                          <span>Secure 256-bit SSL encryption</span>
+                        </div>
+                        <div className="security-item">
+                          <Truck className="h-5 w-5 text-blue-500" />
+                          <span>Global shipping available</span>
+                        </div>
+                        <div className="security-item">
+                          <CreditCard className="h-5 w-5 text-purple-500" />
+                          <span>Multiple payment methods</span>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="payment-options-container">
+                      <h3 className="payment-options-title">Select Payment Method</h3>
+                      <p className="payment-options-subtitle">
+                        Choose your preferred payment option
+                      </p>
+                      
+                      <div className="payment-methods-grid">
+                        {paymentMethods.map((method) => (
+                          <button
+                            key={method.id}
+                            onClick={() => handlePaymentSelection(method.id)}
+                            className={`payment-method-btn ${selectedPayment === method.id ? 'selected' : ''}`}
+                          >
+                            <div className="payment-method-icon">{method.icon}</div>
+                            <div className="payment-method-info">
+                              <div className="payment-method-name">{method.name}</div>
+                              <div className="payment-method-desc">{method.description}</div>
+                            </div>
+                            {selectedPayment === method.id && (
+                              <div className="payment-method-check">✓</div>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                      
+                      <div className="payment-actions">
+                        <button 
+                          onClick={() => setShowPaymentOptions(false)}
+                          className="btn btn-secondary"
+                        >
+                          ← Back to Cart
+                        </button>
+                        <button 
+                          onClick={handleConfirmPayment}
+                          className="btn btn-primary"
+                          disabled={!selectedPayment}
+                        >
+                          Confirm Payment →
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="support-section">
+                    <h4 className="support-title">Need help?</h4>
+                    <div className="support-links">
+                      <button onClick={() => navigate('/contact')}>
                         Contact Support
                       </button>
-                      <button 
-                        onClick={() => navigate('/global-payments')}
-                        className="text-blue-600 hover:text-blue-700 text-sm block w-full text-left"
-                      >
-                        View Payment Options
+                      <button onClick={() => navigate('/global-payments')}>
+                        Global Payment Options
                       </button>
-                      <button 
-                        onClick={() => navigate('/checkout')}
-                        className="text-blue-600 hover:text-blue-700 text-sm block w-full text-left"
-                      >
-                        Return Policy
+                      <button onClick={() => navigate('/shipping')}>
+                        Shipping Information
                       </button>
                     </div>
                   </div>
                 </div>
-              </div>
-            </div>
-
-            {/* Recently Viewed / Recommendations */}
-            <div className="mt-12">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">You Might Also Like</h2>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {/* These would be dynamic recommendations */}
-                {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="bg-white rounded-xl p-4 shadow-sm border border-gray-200 hover:shadow-md transition-shadow cursor-pointer">
-                    <div className="h-32 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg mb-3"></div>
-                    <h3 className="font-medium text-gray-900">Product {i}</h3>
-                    <p className="text-sm text-gray-600">${(i * 29.99).toFixed(2)}</p>
-                  </div>
-                ))}
               </div>
             </div>
           </div>
         </div>
       </main>
-      <Footer />
     </div>
   );
 }
