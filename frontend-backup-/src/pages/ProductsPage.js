@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import ModernHeader from '../components/ModernHeader';
 import ModernFooter from '../components/ModernFooter';
 import ProductGrid from '../components/ProductGrid';
 import { api } from '../services/api';
@@ -27,7 +28,7 @@ const ProductsPage = () => {
 
   return (
     <div className="products-page">
-      {/*No ModernHeader */}
+      <ModernHeader />
       
       <main className="products-content">
         <div className="products-header">

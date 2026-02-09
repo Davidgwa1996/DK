@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import ModernHeader from '../components/ModernHeader';
 import ModernFooter from '../components/ModernFooter';
 import { useCart } from '../context/CartContext';
 import './PaymentGateway.css';
@@ -54,11 +55,11 @@ const PaymentGateway = () => {
 
   return (
     <div className="payment-gateway-page">
-      {/*No ModernHeader */}
+      <ModernHeader />
       
       <main className="payment-content">
         <div className="payment-container">
-          {/*This is just a page Header */}
+          {/* Header */}
           <div className="payment-header">
             <h1>🌍 Global Payments</h1>
             <p className="payment-subtitle">

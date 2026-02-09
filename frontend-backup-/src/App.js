@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { CartProvider } from './context/CartContext';
 import Layout from './components/Layout';
 import HomePage from './pages/HomePage';
@@ -164,6 +164,7 @@ const SafeNotFoundPage = createSafeComponent(NotFoundPage, 'NotFoundPage');
 function App() {
   const [isAppReady, setIsAppReady] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Initialize app
   useEffect(() => {
@@ -203,6 +204,11 @@ function App() {
       window.removeEventListener('offline', handleOffline);
     };
   }, []);
+
+  // Mobile menu handler
+  const handleMobileMenuToggle = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
 
   // Show loading screen while app initializes
   if (!isAppReady) {
@@ -255,83 +261,139 @@ function App() {
       <CartProvider>
         <Router>
           <Routes>
-            {/* Main routes with Layout wrapper - ALL have headers now */}
+            {/* Main routes with mobile menu support */}
             <Route path="/" element={
-              <SafeLayout showHeader={true} showFooter={true}>
-                <SafeHomePage />
+              <SafeLayout 
+                showHeader={true} 
+                showFooter={true}
+                isMobileMenuOpen={isMobileMenuOpen}
+                onMobileMenuToggle={handleMobileMenuToggle}
+              >
+                <SafeHomePage 
+                  isMobileMenuOpen={isMobileMenuOpen}
+                  onMobileMenuToggle={handleMobileMenuToggle}
+                />
               </SafeLayout>
             } />
             
-            {/* Auth page has header (showHeader=true) */}
             <Route path="/auth" element={
-              <SafeLayout showHeader={true} showFooter={true}>
+              <SafeLayout 
+                showHeader={false} 
+                showFooter={false}
+                isMobileMenuOpen={isMobileMenuOpen}
+                onMobileMenuToggle={handleMobileMenuToggle}
+              >
                 <SafeAuthPage />
               </SafeLayout>
             } />
             
-            {/* Redirect /register to /auth (for any old links) */}
-            <Route path="/register" element={<Navigate to="/auth" replace />} />
-            
-            {/* Redirect /login to /auth (for consistency) */}
-            <Route path="/login" element={<Navigate to="/auth" replace />} />
-            
             <Route path="/products" element={
-              <SafeLayout showHeader={true} showFooter={true}>
+              <SafeLayout 
+                showHeader={true} 
+                showFooter={true}
+                isMobileMenuOpen={isMobileMenuOpen}
+                onMobileMenuToggle={handleMobileMenuToggle}
+              >
                 <SafeProductsPage />
               </SafeLayout>
             } />
             
             <Route path="/product/:id" element={
-              <SafeLayout showHeader={true} showFooter={true}>
+              <SafeLayout 
+                showHeader={true} 
+                showFooter={true}
+                isMobileMenuOpen={isMobileMenuOpen}
+                onMobileMenuToggle={handleMobileMenuToggle}
+              >
                 <SafeProductDetailPage />
               </SafeLayout>
             } />
             
             <Route path="/cart" element={
-              <SafeLayout showHeader={true} showFooter={true}>
+              <SafeLayout 
+                showHeader={true} 
+                showFooter={true}
+                isMobileMenuOpen={isMobileMenuOpen}
+                onMobileMenuToggle={handleMobileMenuToggle}
+              >
                 <SafeCartPage />
               </SafeLayout>
             } />
             
             <Route path="/checkout" element={
-              <SafeLayout showHeader={true} showFooter={true}>
+              <SafeLayout 
+                showHeader={true} 
+                showFooter={false}
+                isMobileMenuOpen={isMobileMenuOpen}
+                onMobileMenuToggle={handleMobileMenuToggle}
+              >
                 <SafeCheckoutPage />
               </SafeLayout>
             } />
             
             <Route path="/checkout-success" element={
-              <SafeLayout showHeader={true} showFooter={true}>
+              <SafeLayout 
+                showHeader={true} 
+                showFooter={true}
+                isMobileMenuOpen={isMobileMenuOpen}
+                onMobileMenuToggle={handleMobileMenuToggle}
+              >
                 <SafeCheckoutSuccessPage />
               </SafeLayout>
             } />
             
             <Route path="/category/:category" element={
-              <SafeLayout showHeader={true} showFooter={true}>
+              <SafeLayout 
+                showHeader={true} 
+                showFooter={true}
+                isMobileMenuOpen={isMobileMenuOpen}
+                onMobileMenuToggle={handleMobileMenuToggle}
+              >
                 <SafeCategoryPage />
               </SafeLayout>
             } />
             
             <Route path="/payment" element={
-              <SafeLayout showHeader={true} showFooter={true}>
+              <SafeLayout 
+                showHeader={true} 
+                showFooter={true}
+                isMobileMenuOpen={isMobileMenuOpen}
+                onMobileMenuToggle={handleMobileMenuToggle}
+              >
                 <SafePaymentGateway />
               </SafeLayout>
             } />
             
             <Route path="/contact" element={
-              <SafeLayout showHeader={true} showFooter={true}>
+              <SafeLayout 
+                showHeader={true} 
+                showFooter={true}
+                isMobileMenuOpen={isMobileMenuOpen}
+                onMobileMenuToggle={handleMobileMenuToggle}
+              >
                 <SafeContactPage />
               </SafeLayout>
             } />
             
             <Route path="/market-analysis" element={
-              <SafeLayout showHeader={true} showFooter={true}>
+              <SafeLayout 
+                showHeader={true} 
+                showFooter={true}
+                isMobileMenuOpen={isMobileMenuOpen}
+                onMobileMenuToggle={handleMobileMenuToggle}
+              >
                 <SafeMarketAnalysisPage />
               </SafeLayout>
             } />
             
-            {/* Catch-all route for 404 */}
+            {/* Catch-all route */}
             <Route path="*" element={
-              <SafeLayout showHeader={true} showFooter={true}>
+              <SafeLayout 
+                showHeader={true} 
+                showFooter={true}
+                isMobileMenuOpen={isMobileMenuOpen}
+                onMobileMenuToggle={handleMobileMenuToggle}
+              >
                 <SafeNotFoundPage />
               </SafeLayout>
             } />
@@ -417,6 +479,26 @@ const criticalCSS = `
   .mobile-menu-overlay.active {
     opacity: 1;
     visibility: visible;
+  }
+
+  /* Global market badges */
+  .global-market-badges {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .market-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.4rem 0.8rem;
+    background: rgba(15, 15, 30, 0.8);
+    border: 1px solid rgba(0, 229, 255, 0.2);
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #00e5ff;
   }
 
   /* Cart styles */
@@ -521,6 +603,11 @@ const criticalCSS = `
       grid-template-columns: 1fr;
     }
 
+    .market-badge {
+      font-size: 0.8rem;
+      padding: 0.3rem 0.6rem;
+    }
+
     /* Full-width buttons on mobile */
     .btn-block {
       width: 100%;
@@ -539,6 +626,13 @@ const criticalCSS = `
     /* Remove hover effects for touch devices */
     .product-card:hover {
       transform: none;
+    }
+  }
+
+  /* High contrast mode support */
+  @media (prefers-contrast: high) {
+    .market-badge {
+      border: 2px solid #00e5ff;
     }
   }
 

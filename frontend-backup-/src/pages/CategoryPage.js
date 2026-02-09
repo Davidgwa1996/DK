@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
+import ModernHeader from '../components/ModernHeader';
 import ModernFooter from '../components/ModernFooter';
 import ProductGrid from '../components/ProductGrid';
 import { api } from '../services/api';
@@ -73,7 +74,7 @@ const CategoryPage = () => {
 
   return (
     <div className="category-page">
-      {/*No ModernHeader */}
+      <ModernHeader />
       
       <main className="category-content">
         {/* Category Header */}

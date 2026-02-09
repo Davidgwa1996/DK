@@ -75,10 +75,10 @@ const MarketAnalysisPage = () => {
 
   return (
     <div className="market-analysis-page">
-      {/*No ModernHeader */}
+      <ModernHeader />
       
       <main className="market-content">
-        {/*This is just a page Header */}
+        {/* Header */}
         <div className="market-header">
           <h1>📊 Real-Time Market Analysis</h1>
           <p className="market-subtitle">

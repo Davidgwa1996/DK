@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
+import ModernHeader from '../components/ModernHeader';
 import ModernFooter from '../components/ModernFooter';
 import { useCart } from '../context/CartContext';
 import { api } from '../services/api';
@@ -67,7 +68,7 @@ const ProductDetailPage = () => {
 
   return (
     <div className="product-detail-page">
-     {/*No ModernHeader */}
+      <ModernHeader />
       
       <main className="product-detail-content">
         <div className="product-container">

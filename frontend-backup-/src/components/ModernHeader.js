@@ -101,7 +101,7 @@ const ModernHeader = () => {
           </div>
         </div>
 
-        {/* User Actions - Only Sign In (no Register) */}
+        {/* User Actions - Clean without symbols */}
         <div className="user-actions">
           <div className="region-selector">
             <select 
@@ -127,12 +127,13 @@ const ModernHeader = () => {
             </select>
           </div>
 
-          {/* Only Sign In button - Register removed */}
           <button className="auth-btn signin-btn" onClick={() => navigate('/auth')}>
             Sign In
           </button>
 
-          {/* REMOVED Register button */}
+          <button className="auth-btn register-btn" onClick={() => navigate('/register')}>
+            Register
+          </button>
 
           <Link to="/cart" className="cart-btn">
             <span className="cart-icon">Cart</span>
@@ -179,13 +180,8 @@ const ModernHeader = () => {
           <Link to="/payment" className="mobile-nav-link" onClick={toggleMobileMenu}>Global Payments</Link>
         </div>
         <div className="mobile-auth">
-          {/* Mobile: Only Sign In button - Register removed */}
-          <button className="auth-btn signin-btn" onClick={() => {
-            navigate('/auth');
-            toggleMobileMenu();
-          }}>
-            Sign In
-          </button>
+          <button className="auth-btn register-btn">Register</button>
+          <button className="auth-btn signin-btn">Sign In</button>
         </div>
       </div>
     </header>

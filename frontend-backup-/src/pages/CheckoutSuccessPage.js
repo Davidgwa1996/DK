@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
+import ModernHeader from '../components/ModernHeader';
 import ModernFooter from '../components/ModernFooter';
 import './CheckoutSuccessPage.css';
 
@@ -25,7 +26,7 @@ const CheckoutSuccessPage = () => {
 
   return (
     <div className="checkout-success-page">
-      {/*No ModernHeader */}
+      <ModernHeader />
       
       <main className="success-content">
         <div className="success-card">

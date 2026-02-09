@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import ModernHeader from '../components/ModernHeader';
 import ModernFooter from '../components/ModernFooter';
 import { api } from '../services/api';
 import './AuthPage.css';
@@ -53,7 +54,7 @@ const AuthPage = () => {
 
   return (
     <div className="auth-page">
-      {/* Note: ModernHeader is removed - it's provided by SafeLayout */}
+      <ModernHeader />
       
       <main className="auth-content">
         <div className="auth-container">
@@ -128,7 +129,6 @@ const AuthPage = () => {
                 type="button" 
                 className="oauth-btn google-btn"
                 onClick={handleGoogleLogin}
-                disabled={loading}
               >
                 <span className="oauth-icon">G</span>
                 Continue with Google
@@ -137,7 +137,6 @@ const AuthPage = () => {
                 type="button" 
                 className="oauth-btn apple-btn"
                 onClick={handleAppleLogin}
-                disabled={loading}
               >
                 <span className="oauth-icon">🍎</span>
                 Continue with Apple
@@ -171,7 +170,7 @@ const AuthPage = () => {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="John Doe"
-                    required={!isLogin}
+                    required
                     disabled={loading}
                   />
                 </div>
@@ -210,12 +209,7 @@ const AuthPage = () => {
 
               {!isLogin && (
                 <div className="form-group checkbox-group">
-                  <input 
-                    type="checkbox" 
-                    id="terms" 
-                    required 
-                    disabled={loading}
-                  />
+                  <input type="checkbox" id="terms" required />
                   <label htmlFor="terms">
                     I agree to the <Link to="/terms">Terms of Service</Link> and{' '}
                     <Link to="/privacy">Privacy Policy</Link>
@@ -229,14 +223,14 @@ const AuthPage = () => {
                 disabled={loading}
               >
                 {loading ? (
-                  <span className="loading-spinner">Loading...</span>
+                  <span className="loading-spinner"></span>
                 ) : (
                   isLogin ? 'Sign In' : 'Create Account'
                 )}
               </button>
             </form>
 
-            {/* Toggle between Login/Signup */}
+            {/* Toggle */}
             <div className="auth-toggle">
               {isLogin ? "Don't have an account?" : "Already have an account?"}
               <button 
