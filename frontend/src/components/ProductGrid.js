@@ -4,6 +4,8 @@ import { useCart } from '../context/CartContext';
 import AIPriceBadge from './AIPriceBadge';
 import './ProductGrid.css';
 
+const PLACEHOLDER_IMAGE = 'https://placehold.co/300x300/1e293b/94a3b8?text=No+Image';
+
 const ProductGrid = ({ products = [], columns = 4 }) => {
   const { addToCart } = useCart();
 
@@ -70,7 +72,7 @@ const ProductGrid = ({ products = [], columns = 4 }) => {
       id: product.id || product._id || Math.random().toString(36).substr(2, 9),
       name: product.name || 'Unnamed Product',
       price: product.price || 0,
-      image: product.image || product.imageUrl || '/api/placeholder/300/300',
+      image: product.image || product.imageUrl || PLACEHOLDER_IMAGE,
       category: product.category || 'Uncategorized',
       quantity: 1
     };
@@ -101,7 +103,7 @@ const ProductGrid = ({ products = [], columns = 4 }) => {
           price: product.price ?? 0,
           currency: product.currency || 'GBP',
           originalPrice: product.originalPrice,
-          image: product.image || product.imageUrl || '/api/placeholder/300/300',
+          image: product.image || product.imageUrl || PLACEHOLDER_IMAGE,
           aiLocation: truncateString(product.aiLocation || 'Liverpool', 22),
           aiUpdated: product.aiUpdated || '3m ago',
           aiChange: product.aiChange ?? -23.1
@@ -126,7 +128,7 @@ const ProductGrid = ({ products = [], columns = 4 }) => {
                   src={safeProduct.image} 
                   alt={safeProduct.name} 
                   onError={(e) => {
-                    e.target.src = '/api/placeholder/300/300';
+                    e.target.src = PLACEHOLDER_IMAGE;
                     e.target.onerror = null;
                   }}
                 />

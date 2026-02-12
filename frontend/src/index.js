@@ -396,25 +396,16 @@ if (!rootElement) {
   }
 
   // ============================================
-  // SERVICE WORKER REGISTRATION (PWA)
+  // SERVICE WORKER UNREGISTRATION (Fix Render 404)
   // ============================================
-  if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
-    window.addEventListener('load', () => {
-      const swUrl = `${process.env.PUBLIC_URL}/service-worker.js`;
-      
-      navigator.serviceWorker.register(swUrl)
-        .then((registration) => {
-          console.log('ServiceWorker registration successful:', registration);
-          
-          // Check for updates
-          registration.addEventListener('updatefound', () => {
-            const newWorker = registration.installing;
-            console.log('New service worker found:', newWorker);
-          });
-        })
-        .catch((error) => {
-          console.log('ServiceWorker registration failed:', error);
-        });
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then((registrations) => {
+      for (const registration of registrations) {
+        registration.unregister();
+        console.log('ServiceWorker unregistered:', registration);
+      }
+    }).catch((error) => {
+      console.error('ServiceWorker unregistration failed:', error);
     });
   }
 
@@ -528,76 +519,22 @@ if (!rootElement) {
   }, 1000); // Hide after 1 second (adjust based on your app load time)
 
   // ============================================
-  // PWA INSTALL PROMPT
+  // (REMOVED) PWA INSTALL PROMPT – Service worker is unregistered
   // ============================================
+  // The beforeinstallprompt event is no longer relevant because
+  // the service worker is unregistered. If you need PWA later,
+  // re‑enable the service worker and uncomment the block below.
+  /*
   if ('BeforeInstallPromptEvent' in window) {
     let deferredPrompt;
-    
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
       deferredPrompt = e;
-      
-      // Show install button after 10 seconds
-      setTimeout(() => {
-        if (deferredPrompt) {
-          const installButton = document.createElement('button');
-          installButton.innerHTML = '📱 Install App';
-          installButton.id = 'pwa-install-button';
-          installButton.style.cssText = `
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 25px;
-            font-weight: 600;
-            cursor: pointer;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-            z-index: 9999;
-            font-family: inherit;
-            font-size: 14px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-          `;
-          
-          installButton.onclick = async () => {
-            if (!deferredPrompt) return;
-            
-            deferredPrompt.prompt();
-            const { outcome } = await deferredPrompt.userChoice;
-            
-            if (outcome === 'accepted') {
-              console.log('User accepted PWA installation');
-              installButton.style.display = 'none';
-            }
-            
-            deferredPrompt = null;
-          };
-          
-          document.body.appendChild(installButton);
-          
-          // Auto-remove after 30 seconds
-          setTimeout(() => {
-            if (installButton.parentNode) {
-              installButton.remove();
-            }
-          }, 30000);
-        }
-      }, 10000);
+      // ... (install prompt code) ...
     });
-    
-    window.addEventListener('appinstalled', () => {
-      console.log('PWA was installed');
-      const installButton = document.getElementById('pwa-install-button');
-      if (installButton) {
-        installButton.remove();
-      }
-      deferredPrompt = null;
-    });
+    window.addEventListener('appinstalled', () => { ... });
   }
+  */
 
   // ============================================
   // STARTUP LOGS
@@ -618,7 +555,6 @@ if (!rootElement) {
 // ============================================
 if (typeof performance !== 'undefined' && performance.mark) {
   performance.mark('index-js-loaded');
-  
   performance.measure('index-js-execution', 'navigationStart', 'index-js-loaded');
 }
 
