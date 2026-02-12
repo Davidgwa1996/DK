@@ -44,17 +44,34 @@ const app = express();
 // Connect to database
 connectDB();
 
-// Middleware
-app.use(helmet()); // Security headers
-app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-  credentials: true
-}));
-app.use(morgan('dev')); // HTTP request logger
-app.use(express.json()); // Parse JSON bodies
-app.use(express.urlencoded({ extended: true })); // Parse URL-encoded bodies
+// ========== ✅ UPDATED CORS CONFIGURATION ==========
+// Define allowed origins (local development + production frontend)
+const allowedOrigins = [
+  'http://localhost:3000',                           // Local development
+  'https://unidigitalcom-front-end-xs71.onrender.com' // ✅ Your live frontend URL
+];
 
-// Custom request logging
+app.use(cors({
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps, curl, Postman)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+      callback(new Error(msg), false);
+    }
+  },
+  credentials: true // Allow cookies / authentication headers
+}));
+// ====================================================
+
+// Other middleware
+app.use(helmet());
+app.use(morgan('dev'));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(Logger.request);
 
 // API Routes
@@ -65,8 +82,7 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/payments', paymentRoutes);
 
 // ========== PAYPAL PAYMENT ENDPOINTS ========== //
-
-// Create PayPal order
+// (Your existing PayPal endpoints – unchanged)
 app.post('/api/create-paypal-order', async (req, res) => {
   try {
     const { amount, currency = 'USD', items, description } = req.body;
@@ -78,7 +94,6 @@ app.post('/api/create-paypal-order', async (req, res) => {
       });
     }
 
-    // Create PayPal order request
     const request = new paypal.orders.OrdersCreateRequest();
     request.prefer('return=representation');
     
@@ -106,10 +121,9 @@ app.post('/api/create-paypal-order', async (req, res) => {
       }
     };
 
-    // Add items if provided
     if (items && Array.isArray(items) && items.length > 0) {
       orderBody.purchase_units[0].items = items.map(item => ({
-        name: item.name.substring(0, 127), // PayPal max length
+        name: item.name.substring(0, 127),
         unit_amount: {
           currency_code: currency,
           value: parseFloat(item.price).toFixed(2)
@@ -126,16 +140,13 @@ app.post('/api/create-paypal-order', async (req, res) => {
       };
     }
 
-    // Add description if provided
     if (description) {
       orderBody.purchase_units[0].description = description.substring(0, 127);
     }
 
     request.requestBody(orderBody);
 
-    // Execute PayPal request
     const order = await paypalClient.execute(request);
-    
     Logger.info(`PayPal order created: ${order.result.id}`);
     
     res.status(201).json({
@@ -148,7 +159,6 @@ app.post('/api/create-paypal-order', async (req, res) => {
   } catch (error) {
     Logger.error('PayPal order creation error:', error);
     
-    // Handle specific PayPal errors
     if (error.statusCode === 401) {
       return res.status(401).json({
         error: 'Authentication failed',
@@ -164,7 +174,6 @@ app.post('/api/create-paypal-order', async (req, res) => {
   }
 });
 
-// Capture PayPal order
 app.post('/api/capture-paypal-order', async (req, res) => {
   try {
     const { orderID } = req.body;
@@ -176,16 +185,12 @@ app.post('/api/capture-paypal-order', async (req, res) => {
       });
     }
 
-    // Create capture request
     const request = new paypal.orders.OrdersCaptureRequest(orderID);
     request.requestBody({});
     
-    // Execute capture
     const capture = await paypalClient.execute(request);
-    
     Logger.info(`PayPal order captured: ${capture.result.id}`);
     
-    // Prepare response
     const paymentData = {
       success: true,
       transactionID: capture.result.id,
@@ -198,18 +203,11 @@ app.post('/api/capture-paypal-order', async (req, res) => {
       links: capture.result.links
     };
     
-    // Here you would typically:
-    // 1. Save order to database
-    // 2. Update inventory
-    // 3. Send confirmation email
-    // 4. Clear user's cart
-    
     res.status(200).json(paymentData);
     
   } catch (error) {
     Logger.error('PayPal capture error:', error);
     
-    // Handle specific errors
     if (error.statusCode === 404) {
       return res.status(404).json({
         error: 'Order not found',
@@ -232,7 +230,6 @@ app.post('/api/capture-paypal-order', async (req, res) => {
   }
 });
 
-// Get PayPal order details
 app.get('/api/paypal-order/:orderID', async (req, res) => {
   try {
     const { orderID } = req.params;
@@ -260,33 +257,22 @@ app.get('/api/paypal-order/:orderID', async (req, res) => {
   }
 });
 
-// Webhook endpoint for PayPal notifications
 app.post('/api/paypal-webhook', express.raw({ type: 'application/json' }), async (req, res) => {
   try {
     const webhookEvent = req.body;
     
-    // Verify webhook signature (implement based on PayPal docs)
-    // For production, use PayPal's webhook verification
-    
     Logger.info('PayPal webhook received:', webhookEvent.event_type);
     
-    // Handle different webhook events
     switch (webhookEvent.event_type) {
       case 'PAYMENT.CAPTURE.COMPLETED':
-        // Handle completed payment
         Logger.info('Payment completed:', webhookEvent.resource.id);
         break;
-        
       case 'PAYMENT.CAPTURE.DENIED':
-        // Handle denied payment
         Logger.warn('Payment denied:', webhookEvent.resource.id);
         break;
-        
       case 'PAYMENT.CAPTURE.REFUNDED':
-        // Handle refund
         Logger.info('Payment refunded:', webhookEvent.resource.id);
         break;
-        
       default:
         Logger.info('Unhandled webhook event:', webhookEvent.event_type);
     }
@@ -298,7 +284,6 @@ app.post('/api/paypal-webhook', express.raw({ type: 'application/json' }), async
     res.status(500).json({ error: 'Webhook processing failed' });
   }
 });
-
 // ========== END PAYPAL ENDPOINTS ========== //
 
 // Health check endpoint
@@ -397,37 +382,6 @@ app.get('/health', (req, res) => {
   });
 });
 
-// API welcome endpoint (already exists, but keep it)
-app.get('/api', (req, res) => {
-  res.json({
-    message: 'Welcome to Unidigitalcom API',
-    version: '2.0.0',
-    features: [
-      'User Authentication & Authorization',
-      'Product Management',
-      'Shopping Cart',
-      'Order Processing',
-      'PayPal Payment Integration',
-      'Real-time Market Data',
-      'AI Pricing Engine'
-    ],
-    endpoints: {
-      auth: '/api/auth',
-      products: '/api/products',
-      cart: '/api/cart',
-      orders: '/api/orders',
-      payments: '/api/payments',
-      paypal: {
-        createOrder: 'POST /api/create-paypal-order',
-        captureOrder: 'POST /api/capture-paypal-order',
-        getOrder: 'GET /api/paypal-order/:orderID'
-      },
-      health: '/api/health'
-    },
-    documentation: 'Coming soon...'
-  });
-});
-
 // 404 handler
 app.use(notFound);
 
@@ -442,7 +396,6 @@ const server = app.listen(PORT, () => {
   Logger.api(`🔗 API Base URL: http://localhost:${PORT}/api`);
   Logger.api(`💳 PayPal: ${process.env.PAYPAL_ENVIRONMENT === 'production' ? 'Production Mode' : 'Sandbox Mode'}`);
   
-  // Test PayPal connection
   if (paypalClient) {
     Logger.api(`✅ PayPal SDK initialized successfully`);
   } else {
@@ -454,7 +407,6 @@ const server = app.listen(PORT, () => {
 process.on('unhandledRejection', (err) => {
   Logger.error(`💥 Unhandled Rejection: ${err.message}`);
   Logger.error(err.stack);
-  // Close server & exit process
   server.close(() => process.exit(1));
 });
 
