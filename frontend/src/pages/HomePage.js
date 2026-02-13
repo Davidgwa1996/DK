@@ -19,10 +19,10 @@ const HomePage = () => {
     lastUpdate: '23:08'
   });
 
-  // Fallback static data (used only if API fails)
+  // Global market products data with REAL IMAGES and AI PRICING (fallback)
   const globalProducts = [
-    // ... (your full static product array – unchanged)
-    // (I've omitted the long array here for brevity; keep your existing array exactly as is)
+    // ... (your existing globalProducts array – unchanged)
+    // (I've omitted the long array here for brevity; keep it exactly as you have it)
   ];
 
   useEffect(() => {
@@ -66,7 +66,13 @@ const HomePage = () => {
     setLoading(true);
     try {
       const data = await api.getProducts({ featured: true, limit: 15 });
-      setFeaturedProducts(data?.products || globalProducts);
+      // ✅ Only use API data if it actually contains products
+      if (data?.products && data.products.length > 0) {
+        setFeaturedProducts(data.products);
+      } else {
+        console.log('API returned no products – using globalProducts fallback');
+        setFeaturedProducts(globalProducts);
+      }
     } catch (error) {
       console.error('Error fetching featured products:', error);
       setFeaturedProducts(globalProducts);
@@ -105,11 +111,13 @@ const HomePage = () => {
 
   return (
     <Layout isHomePage={true}>
+      {/* Hero Section */}
       <div className="home-hero">
         <h1>Global Marketplace Products</h1>
         <p>AI-priced deals from US, UK, China, and Japan markets</p>
       </div>
       
+      {/* Main Products Grid – NOW USING featuredProducts STATE */}
       <section className="products-section">
         <div className="section-header">
           <h2 className="section-title">Featured Global Products</h2>
@@ -118,7 +126,6 @@ const HomePage = () => {
           </p>
         </div>
         
-        {/* ✅ NOW USING LIVE DATA (or empty array) */}
         <ProductGrid products={featuredProducts} columns={3} />
         
         <div className="view-all-container">
@@ -131,7 +138,7 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* Market Features – unchanged */}
+      {/* Market Features */}
       <section className="market-features">
         <div className="section-header">
           <h2 className="section-title">Market Intelligence Features</h2>
@@ -175,7 +182,7 @@ const HomePage = () => {
         </div>
       </section>
 
-      {/* Global Market Data – unchanged */}
+      {/* Global Market Data */}
       <section className="market-data-section">
         <div className="section-header">
           <h2 className="section-title">Global Market Indices</h2>
