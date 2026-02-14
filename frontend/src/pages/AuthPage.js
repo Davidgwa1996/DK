@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import axios from 'axios';                 // ✅ direct axios import
 import ModernFooter from '../components/ModernFooter';
-import api from '../services/api';   // ✅ your real API service
 import './AuthPage.css';
+
+const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 const AuthPage = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -23,7 +25,7 @@ const AuthPage = () => {
     return re.test(email);
   };
 
-  // Password strength check (matches backend: at least one uppercase, one lowercase, one number)
+  // Password strength check (matches backend requirements)
   const checkPasswordStrength = (password) => {
     if (password.length < 8) return 'weak';
     const hasUpper = /[A-Z]/.test(password);
@@ -47,7 +49,7 @@ const AuthPage = () => {
     setError('');
     setSuccess('');
 
-    // Basic frontend validation
+    // Basic validation
     if (!validateEmail(email)) {
       setError('Please enter a valid email address');
       setLoading(false);
@@ -89,25 +91,25 @@ const AuthPage = () => {
 
     try {
       if (isLogin) {
-        // LOGIN
-        const response = await api.post('/auth/login', { email, password });
+        // ✅ LOGIN with axios
+        const response = await axios.post(`${API_BASE}/auth/login`, { email, password });
         localStorage.setItem('auth_token', response.data.token);
         localStorage.setItem('user', JSON.stringify(response.data.user));
         setSuccess('Login successful! Redirecting...');
         setTimeout(() => navigate('/'), 1500);
       } else {
-        // REGISTER – split fullName into firstName and lastName
+        // ✅ REGISTER – split full name
         const nameParts = fullName.trim().split(' ');
         const firstName = nameParts[0] || '';
-        const lastName = nameParts.slice(1).join(' ') || ''; // rest as last name
+        const lastName = nameParts.slice(1).join(' ') || '';
 
-        const response = await api.post('/auth/register', {
+        await axios.post(`${API_BASE}/auth/register`, {
           firstName,
           lastName,
           email: email.trim(),
           password,
-          acceptTerms: true,               // ✅ required by backend
-          market: 'US',                     // default market (you can make this selectable)
+          acceptTerms: true,
+          market: 'US',
         });
 
         setSuccess('Registration successful! You can now login.');
@@ -121,7 +123,7 @@ const AuthPage = () => {
         setIsLogin(true);
       }
     } catch (err) {
-      // Extract error message from backend response
+      // Extract error message from backend
       const message = err.response?.data?.message || err.message || 'An error occurred';
       setError(message);
     } finally {
@@ -130,12 +132,11 @@ const AuthPage = () => {
   };
 
   const handleGoogleLogin = () => {
-    // Optional: show a message that it's not implemented
-    setError('Google login is not available yet.');
+    window.location.href = `${API_BASE}/auth/google`;
   };
 
   const handleAppleLogin = () => {
-    setError('Apple login will be implemented soon.');
+    window.location.href = `${API_BASE}/auth/apple`;
   };
 
   // Password strength indicator
@@ -242,24 +243,22 @@ const AuthPage = () => {
               <p>{isLogin ? 'Sign in to your account' : 'Join our global marketplace'}</p>
             </div>
 
-            {/* OAuth Buttons – disabled with tooltip since not implemented */}
+            {/* OAuth Buttons – now functional (redirect to backend) */}
             <div className="oauth-buttons">
               <button
                 type="button"
-                className="oauth-btn google-btn disabled"
+                className="oauth-btn google-btn"
                 onClick={handleGoogleLogin}
-                disabled={true}
-                title="Google login not yet available"
+                disabled={loading}
               >
                 <span className="oauth-icon">G</span>
                 Continue with Google
               </button>
               <button
                 type="button"
-                className="oauth-btn apple-btn disabled"
+                className="oauth-btn apple-btn"
                 onClick={handleAppleLogin}
-                disabled={true}
-                title="Apple login not yet available"
+                disabled={loading}
               >
                 <span className="oauth-icon">🍎</span>
                 Continue with Apple
