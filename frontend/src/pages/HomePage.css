@@ -1,22 +1,27 @@
-/* HomePage.css - UPDATED with reduced header gap */
+/* HomePage.css - UPDATED to ensure full vertical scrolling */
 
 .home-page {
   min-height: 100vh;
   background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
   color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  overflow-y: auto;        /* allow vertical scroll */
+  overflow-x: hidden;
 }
 
 /* ===== HOME HERO – REDUCED TOP PADDING & NO EXTRA MARGIN ===== */
 .home-hero {
   text-align: center;
-  margin-top: 0;              /* remove any top margin */
-  padding-top: 1.5rem;        /* was 40px – now much tighter */
-  padding-bottom: 2rem;       /* was 40px – reduced */
+  margin-top: 0;
+  padding-top: 1.5rem;
+  padding-bottom: 2rem;
   padding-left: 20px;
   padding-right: 20px;
   background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%);
   border-radius: 0 0 20px 20px;
-  margin-bottom: 40px;        /* keep bottom margin to separate from content */
+  margin-bottom: 40px;
   border-bottom: 1px solid #334155;
 }
 
@@ -44,6 +49,8 @@
   margin: 40px auto;
   max-width: 1400px;
   padding: 0 20px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 /* Product Grid with Real Images */
@@ -52,6 +59,7 @@
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 2rem;
   margin: 2rem 0;
+  width: 100%;
 }
 
 .product-card {
@@ -219,6 +227,7 @@
 .section-header {
   text-align: center;
   margin-bottom: 3rem;
+  width: 100%;
 }
 
 .section-title {
@@ -243,18 +252,23 @@
 .products-section {
   margin: 60px 0;
   padding: 0 20px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 /* Market Features */
 .market-features {
   margin: 4rem 0;
   padding: 0 20px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .features-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 2rem;
+  width: 100%;
 }
 
 .feature-card {
@@ -297,6 +311,7 @@
   padding: 2.5rem;
   margin: 4rem 20px;
   border: 1px solid rgba(0, 229, 255, 0.1);
+  box-sizing: border-box;
 }
 
 .update-time {
@@ -398,10 +413,35 @@
   100% { transform: rotate(360deg); }
 }
 
+/* ===== CRITICAL SCROLL FIXES ===== */
+/* Ensure no container hides overflow */
+.products-section,
+.market-features,
+.market-data-section,
+.section-header,
+.features-grid,
+.market-indices,
+.product-actions {
+  overflow: visible !important;
+}
+
+/* Allow content to expand naturally */
+.product-card,
+.feature-card,
+.market-index {
+  height: auto;
+  min-height: 0;
+}
+
+/* Remove any max-height that might clip content */
+.product-description {
+  max-height: none;
+}
+
 /* Mobile Responsive */
 @media (max-width: 768px) {
   .home-hero {
-    padding-top: 1.2rem;      /* even tighter on mobile */
+    padding-top: 1.2rem;
     padding-bottom: 1.5rem;
     padding-left: 15px;
     padding-right: 15px;

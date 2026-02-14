@@ -1,4 +1,4 @@
-/* src/index.css - Optimized for Immediate Loading */
+/* src/index.css - Optimized for Immediate Loading & Mobile Scrolling */
 
 /* CRITICAL CSS - Loads Immediately (No @import) */
 /* Google Fonts loaded async to prevent render blocking */
@@ -69,7 +69,8 @@
 html, body, #root {
   height: 100%;
   width: 100%;
-  overflow-x: hidden;
+  overflow-x: hidden;      /* prevent horizontal scroll */
+  overflow-y: auto;        /* force vertical scroll (if content overflows) */
 }
 
 html {
@@ -93,6 +94,8 @@ body {
 #root {
   background: var(--color-bg);
   min-height: 100vh;
+  display: flex;           /* ensure root can stretch children */
+  flex-direction: column;
 }
 
 /* ===== LOADING SCREEN STYLES ===== */
