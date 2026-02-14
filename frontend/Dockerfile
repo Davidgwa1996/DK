@@ -2,7 +2,8 @@
 FROM node:18-alpine AS builder
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci --only=production
+# Install ALL dependencies (including dev) for building
+RUN npm ci
 COPY . .
 RUN npm run build
 
