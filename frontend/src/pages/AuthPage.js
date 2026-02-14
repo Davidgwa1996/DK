@@ -25,8 +25,7 @@ const AuthPage = () => {
     return re.test(email);
   };
 
-  // Password strength check – matches backend requirements:
-  // at least 6 chars, one uppercase, one lowercase, one number
+  // Password strength check – matches backend requirements
   const checkPasswordStrength = (password) => {
     const hasLower = /[a-z]/.test(password);
     const hasUpper = /[A-Z]/.test(password);
@@ -82,7 +81,6 @@ const AuthPage = () => {
         return;
       }
 
-      // Backend requires uppercase, lowercase, and number
       const hasUpper = /[A-Z]/.test(password);
       const hasLower = /[a-z]/.test(password);
       const hasNumber = /[0-9]/.test(password);
@@ -102,23 +100,21 @@ const AuthPage = () => {
         setSuccess('Login successful! Redirecting...');
         setTimeout(() => navigate('/'), 1500);
       } else {
-        // REGISTER – split full name into firstName and lastName
+        // REGISTER – split full name
         const nameParts = fullName.trim().split(' ');
         const firstName = nameParts[0] || '';
         const lastName = nameParts.slice(1).join(' ') || '';
 
-        // ⚠️ CRITICAL: acceptTerms must be sent as string 'true' (backend expects exact string)
         const response = await axios.post(`${API_BASE}/auth/register`, {
           firstName,
           lastName,
           email: email.trim(),
           password,
-          acceptTerms: 'true',      // ✅ FIXED: send as string, not boolean
+          acceptTerms: 'true',      // ✅ must be string 'true'
           market: 'US',
         });
 
         setSuccess('Registration successful! You can now login.');
-        // Clear form
         setFullName('');
         setEmail('');
         setPassword('');
@@ -128,10 +124,32 @@ const AuthPage = () => {
         setIsLogin(true);
       }
     } catch (err) {
-      // ✅ Show exact error message from backend
-      console.error('Full error:', err.response?.data);
-      const message = err.response?.data?.message || err.message || 'An error occurred. Please try again.';
-      setError(message);
+      // 🔍 Detailed error logging
+      console.error('Full error object:', err);
+      if (err.response) {
+        console.error('Error response data:', err.response.data);
+        console.error('Error response status:', err.response.status);
+        console.error('Error response headers:', err.response.headers);
+      } else if (err.request) {
+        console.error('No response received:', err.request);
+      } else {
+        console.error('Error setting up request:', err.message);
+      }
+
+      // Extract and display the most specific error message
+      let errorMessage = 'An error occurred. Please try again.';
+      if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      } else if (err.response?.data?.errors) {
+        // Handle validation error arrays
+        errorMessage = err.response.data.errors.map(e => e.msg).join(', ');
+      } else if (err.response?.data) {
+        // If response data is a string, use it
+        errorMessage = typeof err.response.data === 'string' ? err.response.data : JSON.stringify(err.response.data);
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -145,37 +163,17 @@ const AuthPage = () => {
     setError('Apple login is not yet available. Please use Google or email.');
   };
 
-  // Password strength indicator
   const renderPasswordStrength = () => {
     if (!password || isLogin) return null;
-
     const strength = passwordStrength;
-    const strengthText = {
-      weak: 'Weak',
-      medium: 'Medium',
-      strong: 'Strong'
-    }[strength];
-
-    const strengthColor = {
-      weak: '#ff4757',
-      medium: '#ffa502',
-      strong: '#2ed573'
-    }[strength];
-
+    const strengthText = { weak: 'Weak', medium: 'Medium', strong: 'Strong' }[strength];
+    const strengthColor = { weak: '#ff4757', medium: '#ffa502', strong: '#2ed573' }[strength];
     return (
       <div className="password-strength">
         <div className="strength-bar">
-          <div
-            className="strength-fill"
-            style={{
-              width: strength === 'weak' ? '33%' : strength === 'medium' ? '66%' : '100%',
-              backgroundColor: strengthColor
-            }}
-          />
+          <div className="strength-fill" style={{ width: strength === 'weak' ? '33%' : strength === 'medium' ? '66%' : '100%', backgroundColor: strengthColor }} />
         </div>
-        <span className="strength-text" style={{ color: strengthColor }}>
-          {strengthText} Password
-        </span>
+        <span className="strength-text" style={{ color: strengthColor }}>{strengthText} Password</span>
       </div>
     );
   };
@@ -184,17 +182,14 @@ const AuthPage = () => {
     <div className="auth-page">
       <main className="auth-content">
         <div className="auth-container">
-          {/* Left column – info */}
+          {/* Left column – info (unchanged) */}
           <div className="auth-info">
             <div className="auth-logo">
               <span>🌍</span>
               <span>UD</span>
             </div>
             <h1>Welcome to UniDigital</h1>
-            <p className="auth-subtitle">
-              Join the global marketplace for AI-priced cars and electronics
-            </p>
-
+            <p className="auth-subtitle">Join the global marketplace for AI-priced cars and electronics</p>
             <div className="auth-features">
               <div className="feature">
                 <span className="feature-icon">🤖</span>
@@ -225,20 +220,10 @@ const AuthPage = () => {
                 </div>
               </div>
             </div>
-
             <div className="auth-stats">
-              <div className="stat">
-                <strong>50K+</strong>
-                <span>Products</span>
-              </div>
-              <div className="stat">
-                <strong>98.7%</strong>
-                <span>AI Accuracy</span>
-              </div>
-              <div className="stat">
-                <strong>24/7</strong>
-                <span>Support</span>
-              </div>
+              <div className="stat"><strong>50K+</strong><span>Products</span></div>
+              <div className="stat"><strong>98.7%</strong><span>AI Accuracy</span></div>
+              <div className="stat"><strong>24/7</strong><span>Support</span></div>
             </div>
           </div>
 
@@ -249,181 +234,81 @@ const AuthPage = () => {
               <p>{isLogin ? 'Sign in to your account' : 'Join our global marketplace'}</p>
             </div>
 
-            {/* OAuth Buttons */}
             <div className="oauth-buttons">
-              <button
-                type="button"
-                className="oauth-btn google-btn"
-                onClick={handleGoogleLogin}
-                disabled={loading}
-              >
-                <span className="oauth-icon">G</span>
-                Continue with Google
+              <button type="button" className="oauth-btn google-btn" onClick={handleGoogleLogin} disabled={loading}>
+                <span className="oauth-icon">G</span> Continue with Google
               </button>
-              <button
-                type="button"
-                className="oauth-btn apple-btn"
-                onClick={handleAppleLogin}
-                disabled={loading}
-              >
-                <span className="oauth-icon">🍎</span>
-                Continue with Apple
+              <button type="button" className="oauth-btn apple-btn" onClick={handleAppleLogin} disabled={loading}>
+                <span className="oauth-icon">🍎</span> Continue with Apple
               </button>
             </div>
 
-            <div className="divider">
-              <span>or</span>
-            </div>
+            <div className="divider"><span>or</span></div>
 
-            {/* Form */}
             <form onSubmit={handleSubmit} className="auth-form">
               {error && (
                 <div className="alert alert-error">
                   ⚠️ {error}
                 </div>
               )}
-
-              {success && (
-                <div className="alert alert-success">
-                  ✅ {success}
-                </div>
-              )}
+              {success && <div className="alert alert-success">✅ {success}</div>}
 
               {!isLogin && (
                 <div className="form-group">
                   <label htmlFor="fullName">Full Name *</label>
-                  <input
-                    type="text"
-                    id="fullName"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    placeholder="John Doe"
-                    required={!isLogin}
-                    disabled={loading}
-                  />
+                  <input type="text" id="fullName" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="John Doe" required={!isLogin} disabled={loading} />
                 </div>
               )}
 
               <div className="form-group">
                 <label htmlFor="email">Email Address *</label>
-                <input
-                  type="email"
-                  id="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@example.com"
-                  required
-                  disabled={loading}
-                  className={email && !validateEmail(email) ? 'invalid' : ''}
-                />
-                {email && !validateEmail(email) && (
-                  <small className="error-text">Please enter a valid email</small>
-                )}
+                <input type="email" id="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" required disabled={loading} className={email && !validateEmail(email) ? 'invalid' : ''} />
+                {email && !validateEmail(email) && <small className="error-text">Please enter a valid email</small>}
               </div>
 
               <div className="form-group">
                 <label htmlFor="password">Password *</label>
-                <input
-                  type="password"
-                  id="password"
-                  value={password}
-                  onChange={(e) => handlePasswordChange(e.target.value)}
-                  placeholder="••••••••"
-                  required
-                  disabled={loading}
-                  minLength="6"
-                />
+                <input type="password" id="password" value={password} onChange={(e) => handlePasswordChange(e.target.value)} placeholder="••••••••" required disabled={loading} minLength="6" />
                 {renderPasswordStrength()}
-                {isLogin && (
-                  <Link to="/forgot-password" className="forgot-password">
-                    Forgot password?
-                  </Link>
-                )}
+                {isLogin && <Link to="/forgot-password" className="forgot-password">Forgot password?</Link>}
               </div>
 
               {!isLogin && (
                 <div className="form-group">
                   <label htmlFor="confirmPassword">Confirm Password *</label>
-                  <input
-                    type="password"
-                    id="confirmPassword"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="••••••••"
-                    required={!isLogin}
-                    disabled={loading}
-                    className={confirmPassword && password !== confirmPassword ? 'invalid' : ''}
-                  />
-                  {confirmPassword && password !== confirmPassword && (
-                    <small className="error-text">Passwords do not match</small>
-                  )}
+                  <input type="password" id="confirmPassword" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="••••••••" required={!isLogin} disabled={loading} className={confirmPassword && password !== confirmPassword ? 'invalid' : ''} />
+                  {confirmPassword && password !== confirmPassword && <small className="error-text">Passwords do not match</small>}
                 </div>
               )}
 
               {!isLogin && (
                 <div className="form-group checkbox-group">
-                  <input
-                    type="checkbox"
-                    id="terms"
-                    checked={acceptTerms}
-                    onChange={(e) => setAcceptTerms(e.target.checked)}
-                    required
-                    disabled={loading}
-                  />
-                  <label htmlFor="terms">
-                    I agree to the <Link to="/terms">Terms of Service</Link> and{' '}
-                    <Link to="/privacy">Privacy Policy</Link>
-                  </label>
+                  <input type="checkbox" id="terms" checked={acceptTerms} onChange={(e) => setAcceptTerms(e.target.checked)} required disabled={loading} />
+                  <label htmlFor="terms">I agree to the <Link to="/terms">Terms of Service</Link> and <Link to="/privacy">Privacy Policy</Link></label>
                 </div>
               )}
 
-              <button
-                type="submit"
-                className="auth-submit-btn"
-                disabled={loading}
-              >
+              <button type="submit" className="auth-submit-btn" disabled={loading}>
                 {loading ? (
-                  <span className="loading">
-                    <span className="spinner"></span>
-                    {isLogin ? 'Signing In...' : 'Creating Account...'}
-                  </span>
-                ) : (
-                  isLogin ? 'Sign In' : 'Create Account'
-                )}
+                  <span className="loading"><span className="spinner"></span>{isLogin ? 'Signing In...' : 'Creating Account...'}</span>
+                ) : (isLogin ? 'Sign In' : 'Create Account')}
               </button>
             </form>
 
-            {/* Toggle between Login/Signup */}
             <div className="auth-toggle">
               {isLogin ? "Don't have an account?" : "Already have an account?"}
-              <button
-                type="button"
-                className="toggle-btn"
-                onClick={() => {
-                  setIsLogin(!isLogin);
-                  setError('');
-                  setSuccess('');
-                  setPasswordStrength('');
-                }}
-                disabled={loading}
-              >
+              <button type="button" className="toggle-btn" onClick={() => { setIsLogin(!isLogin); setError(''); setSuccess(''); setPasswordStrength(''); }} disabled={loading}>
                 {isLogin ? 'Sign Up' : 'Sign In'}
               </button>
             </div>
 
-            {/* Additional Links */}
             <div className="auth-links">
-              <Link to="/" className="back-home">
-                ← Back to Home
-              </Link>
-              <Link to="/contact" className="help-link">
-                Need Help?
-              </Link>
+              <Link to="/" className="back-home">← Back to Home</Link>
+              <Link to="/contact" className="help-link">Need Help?</Link>
             </div>
           </div>
         </div>
       </main>
-
       <ModernFooter />
     </div>
   );
