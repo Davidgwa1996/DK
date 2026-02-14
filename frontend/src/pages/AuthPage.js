@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import ModernFooter from '../components/ModernFooter';
-import { api } from '../services/api';              // ✅ named import
+import api from '../services/api';   // ✅ your real API service
 import './AuthPage.css';
 
 const AuthPage = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
+  const [fullName, setFullName] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [acceptTerms, setAcceptTerms] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -22,19 +23,21 @@ const AuthPage = () => {
     return re.test(email);
   };
 
-  // Password strength check
+  // Password strength check (matches backend: at least one uppercase, one lowercase, one number)
   const checkPasswordStrength = (password) => {
     if (password.length < 8) return 'weak';
-    if (password.length >= 8 && /[A-Z]/.test(password) && /[0-9]/.test(password)) return 'strong';
-    return 'medium';
+    const hasUpper = /[A-Z]/.test(password);
+    const hasLower = /[a-z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    if (hasUpper && hasLower && hasNumber) return 'strong';
+    if (password.length >= 8 && (hasUpper || hasNumber)) return 'medium';
+    return 'weak';
   };
 
-  // Handle password change
   const handlePasswordChange = (value) => {
     setPassword(value);
     if (!isLogin) {
-      const strength = checkPasswordStrength(value);
-      setPasswordStrength(strength);
+      setPasswordStrength(checkPasswordStrength(value));
     }
   };
 
@@ -44,7 +47,7 @@ const AuthPage = () => {
     setError('');
     setSuccess('');
 
-    // Validation
+    // Basic frontend validation
     if (!validateEmail(email)) {
       setError('Please enter a valid email address');
       setLoading(false);
@@ -52,13 +55,13 @@ const AuthPage = () => {
     }
 
     if (password.length < 6) {
-      setError('Password must be at least 6 characters long');
+      setError('Password must be at least 6 characters');
       setLoading(false);
       return;
     }
 
     if (!isLogin) {
-      if (!name.trim()) {
+      if (!fullName.trim()) {
         setError('Please enter your full name');
         setLoading(false);
         return;
@@ -70,9 +73,15 @@ const AuthPage = () => {
         return;
       }
 
+      if (!acceptTerms) {
+        setError('You must accept the Terms of Service');
+        setLoading(false);
+        return;
+      }
+
       const strength = checkPasswordStrength(password);
       if (strength === 'weak') {
-        setError('Password is too weak. Use at least 8 characters with uppercase letters and numbers');
+        setError('Password is too weak. Use at least 8 characters with uppercase, lowercase, and a number');
         setLoading(false);
         return;
       }
@@ -80,38 +89,49 @@ const AuthPage = () => {
 
     try {
       if (isLogin) {
-        // ✅ LOGIN using api.login
-        const response = await api.login(email, password);
-        // api.login already stores the token in localStorage
-        localStorage.setItem('user', JSON.stringify(response.user));
+        // LOGIN
+        const response = await api.post('/auth/login', { email, password });
+        localStorage.setItem('auth_token', response.data.token);
+        localStorage.setItem('user', JSON.stringify(response.data.user));
         setSuccess('Login successful! Redirecting...');
         setTimeout(() => navigate('/'), 1500);
       } else {
-        // ✅ REGISTER using api.register
-        await api.register({
-          name: name.trim(),
+        // REGISTER – split fullName into firstName and lastName
+        const nameParts = fullName.trim().split(' ');
+        const firstName = nameParts[0] || '';
+        const lastName = nameParts.slice(1).join(' ') || ''; // rest as last name
+
+        const response = await api.post('/auth/register', {
+          firstName,
+          lastName,
           email: email.trim(),
           password,
+          acceptTerms: true,               // ✅ required by backend
+          market: 'US',                     // default market (you can make this selectable)
         });
+
         setSuccess('Registration successful! You can now login.');
         // Clear form
-        setName('');
+        setFullName('');
+        setEmail('');
         setPassword('');
         setConfirmPassword('');
+        setAcceptTerms(false);
         setPasswordStrength('');
         setIsLogin(true);
       }
     } catch (err) {
-      // Error message is already user‑friendly from api methods
-      setError(err.message);
+      // Extract error message from backend response
+      const message = err.response?.data?.message || err.message || 'An error occurred';
+      setError(message);
     } finally {
       setLoading(false);
     }
   };
 
   const handleGoogleLogin = () => {
-    // Redirect to Google OAuth – make sure your backend supports this endpoint
-    window.location.href = `${process.env.REACT_APP_API_URL}/auth/google`;
+    // Optional: show a message that it's not implemented
+    setError('Google login is not available yet.');
   };
 
   const handleAppleLogin = () => {
@@ -121,25 +141,25 @@ const AuthPage = () => {
   // Password strength indicator
   const renderPasswordStrength = () => {
     if (!password || isLogin) return null;
-    
+
     const strength = passwordStrength;
     const strengthText = {
       weak: 'Weak',
       medium: 'Medium',
       strong: 'Strong'
     }[strength];
-    
+
     const strengthColor = {
       weak: '#ff4757',
       medium: '#ffa502',
       strong: '#2ed573'
     }[strength];
-    
+
     return (
       <div className="password-strength">
         <div className="strength-bar">
-          <div 
-            className="strength-fill" 
+          <div
+            className="strength-fill"
             style={{
               width: strength === 'weak' ? '33%' : strength === 'medium' ? '66%' : '100%',
               backgroundColor: strengthColor
@@ -157,7 +177,7 @@ const AuthPage = () => {
     <div className="auth-page">
       <main className="auth-content">
         <div className="auth-container">
-          {/* Left Column: Info */}
+          {/* Left column – info (unchanged) */}
           <div className="auth-info">
             <div className="auth-logo">
               <span>🌍</span>
@@ -167,7 +187,7 @@ const AuthPage = () => {
             <p className="auth-subtitle">
               Join the global marketplace for AI-priced cars and electronics
             </p>
-            
+
             <div className="auth-features">
               <div className="feature">
                 <span className="feature-icon">🤖</span>
@@ -176,7 +196,6 @@ const AuthPage = () => {
                   <p>Real-time market analysis for the best prices</p>
                 </div>
               </div>
-              
               <div className="feature">
                 <span className="feature-icon">🌍</span>
                 <div className="feature-content">
@@ -184,7 +203,6 @@ const AuthPage = () => {
                   <p>Shop from verified sellers worldwide</p>
                 </div>
               </div>
-              
               <div className="feature">
                 <span className="feature-icon">🛡️</span>
                 <div className="feature-content">
@@ -192,7 +210,6 @@ const AuthPage = () => {
                   <p>Protected payments and buyer guarantees</p>
                 </div>
               </div>
-              
               <div className="feature">
                 <span className="feature-icon">🚚</span>
                 <div className="feature-content">
@@ -201,7 +218,7 @@ const AuthPage = () => {
                 </div>
               </div>
             </div>
-            
+
             <div className="auth-stats">
               <div className="stat">
                 <strong>50K+</strong>
@@ -218,29 +235,31 @@ const AuthPage = () => {
             </div>
           </div>
 
-          {/* Right Column: Form */}
+          {/* Right column – form */}
           <div className="auth-form-container">
             <div className="auth-form-header">
               <h2>{isLogin ? 'Welcome Back' : 'Create Account'}</h2>
               <p>{isLogin ? 'Sign in to your account' : 'Join our global marketplace'}</p>
             </div>
 
-            {/* OAuth Buttons */}
+            {/* OAuth Buttons – disabled with tooltip since not implemented */}
             <div className="oauth-buttons">
-              <button 
-                type="button" 
-                className="oauth-btn google-btn"
+              <button
+                type="button"
+                className="oauth-btn google-btn disabled"
                 onClick={handleGoogleLogin}
-                disabled={loading}
+                disabled={true}
+                title="Google login not yet available"
               >
                 <span className="oauth-icon">G</span>
                 Continue with Google
               </button>
-              <button 
-                type="button" 
-                className="oauth-btn apple-btn"
+              <button
+                type="button"
+                className="oauth-btn apple-btn disabled"
                 onClick={handleAppleLogin}
-                disabled={loading}
+                disabled={true}
+                title="Apple login not yet available"
               >
                 <span className="oauth-icon">🍎</span>
                 Continue with Apple
@@ -258,7 +277,7 @@ const AuthPage = () => {
                   ⚠️ {error}
                 </div>
               )}
-              
+
               {success && (
                 <div className="alert alert-success">
                   ✅ {success}
@@ -267,12 +286,12 @@ const AuthPage = () => {
 
               {!isLogin && (
                 <div className="form-group">
-                  <label htmlFor="name">Full Name *</label>
+                  <label htmlFor="fullName">Full Name *</label>
                   <input
                     type="text"
-                    id="name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
+                    id="fullName"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
                     placeholder="John Doe"
                     required={!isLogin}
                     disabled={loading}
@@ -338,10 +357,12 @@ const AuthPage = () => {
 
               {!isLogin && (
                 <div className="form-group checkbox-group">
-                  <input 
-                    type="checkbox" 
-                    id="terms" 
-                    required 
+                  <input
+                    type="checkbox"
+                    id="terms"
+                    checked={acceptTerms}
+                    onChange={(e) => setAcceptTerms(e.target.checked)}
+                    required
                     disabled={loading}
                   />
                   <label htmlFor="terms">
@@ -351,8 +372,8 @@ const AuthPage = () => {
                 </div>
               )}
 
-              <button 
-                type="submit" 
+              <button
+                type="submit"
                 className="auth-submit-btn"
                 disabled={loading}
               >
@@ -370,8 +391,8 @@ const AuthPage = () => {
             {/* Toggle between Login/Signup */}
             <div className="auth-toggle">
               {isLogin ? "Don't have an account?" : "Already have an account?"}
-              <button 
-                type="button" 
+              <button
+                type="button"
                 className="toggle-btn"
                 onClick={() => {
                   setIsLogin(!isLogin);
