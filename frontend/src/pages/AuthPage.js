@@ -107,12 +107,13 @@ const AuthPage = () => {
         const firstName = nameParts[0] || '';
         const lastName = nameParts.slice(1).join(' ') || '';
 
+        // ⚠️ CRITICAL: acceptTerms must be sent as string 'true' (backend expects exact string)
         const response = await axios.post(`${API_BASE}/auth/register`, {
           firstName,
           lastName,
           email: email.trim(),
           password,
-          acceptTerms: true,
+          acceptTerms: 'true',      // ✅ FIXED: send as string, not boolean
           market: 'US',
         });
 
@@ -127,10 +128,9 @@ const AuthPage = () => {
         setIsLogin(true);
       }
     } catch (err) {
-      // Log full error to console for debugging
-      console.error('Registration/Login error:', err.response?.data || err.message);
-      // Show the error message from backend, or a generic one
-      const message = err.response?.data?.message || err.message || 'An error occurred';
+      // ✅ Show exact error message from backend
+      console.error('Full error:', err.response?.data);
+      const message = err.response?.data?.message || err.message || 'An error occurred. Please try again.';
       setError(message);
     } finally {
       setLoading(false);
