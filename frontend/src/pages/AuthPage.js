@@ -25,14 +25,15 @@ const AuthPage = () => {
     return re.test(email);
   };
 
-  // Password strength check (matches backend requirements)
+  // Password strength check – matches backend requirements:
+  // at least 6 chars, one uppercase, one lowercase, one number
   const checkPasswordStrength = (password) => {
-    if (password.length < 8) return 'weak';
-    const hasUpper = /[A-Z]/.test(password);
     const hasLower = /[a-z]/.test(password);
+    const hasUpper = /[A-Z]/.test(password);
     const hasNumber = /[0-9]/.test(password);
-    if (hasUpper && hasLower && hasNumber) return 'strong';
-    if (password.length >= 8 && (hasUpper || hasNumber)) return 'medium';
+
+    if (password.length >= 8 && hasLower && hasUpper && hasNumber) return 'strong';
+    if (password.length >= 6 && hasLower && hasUpper && hasNumber) return 'medium';
     return 'weak';
   };
 
@@ -81,9 +82,12 @@ const AuthPage = () => {
         return;
       }
 
-      const strength = checkPasswordStrength(password);
-      if (strength === 'weak') {
-        setError('Password is too weak. Use at least 8 characters with uppercase, lowercase, and a number');
+      // Backend requires uppercase, lowercase, and number
+      const hasUpper = /[A-Z]/.test(password);
+      const hasLower = /[a-z]/.test(password);
+      const hasNumber = /[0-9]/.test(password);
+      if (!hasUpper || !hasLower || !hasNumber) {
+        setError('Password must contain at least one uppercase letter, one lowercase letter, and one number');
         setLoading(false);
         return;
       }
@@ -98,18 +102,18 @@ const AuthPage = () => {
         setSuccess('Login successful! Redirecting...');
         setTimeout(() => navigate('/'), 1500);
       } else {
-        // REGISTER – split full name
+        // REGISTER – split full name into firstName and lastName
         const nameParts = fullName.trim().split(' ');
         const firstName = nameParts[0] || '';
         const lastName = nameParts.slice(1).join(' ') || '';
 
-        await axios.post(`${API_BASE}/auth/register`, {
+        const response = await axios.post(`${API_BASE}/auth/register`, {
           firstName,
           lastName,
           email: email.trim(),
           password,
-          acceptTerms: 'true',  // ✅ backend expects string 'true', not boolean
-          market: 'US',          // default market
+          acceptTerms: true,
+          market: 'US',
         });
 
         setSuccess('Registration successful! You can now login.');
@@ -123,6 +127,9 @@ const AuthPage = () => {
         setIsLogin(true);
       }
     } catch (err) {
+      // Log full error to console for debugging
+      console.error('Registration/Login error:', err.response?.data || err.message);
+      // Show the error message from backend, or a generic one
       const message = err.response?.data?.message || err.message || 'An error occurred';
       setError(message);
     } finally {
@@ -135,7 +142,7 @@ const AuthPage = () => {
   };
 
   const handleAppleLogin = () => {
-    window.location.href = `${API_BASE}/auth/apple`;
+    setError('Apple login is not yet available. Please use Google or email.');
   };
 
   // Password strength indicator
