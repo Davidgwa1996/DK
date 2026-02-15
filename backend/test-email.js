@@ -1,38 +1,28 @@
-const nodemailer = require('nodemailer');
 require('dotenv').config();
+const sgMail = require('@sendgrid/mail');
 
-console.log('SMTP config:', {
-  host: process.env.SMTP_HOST,
-  port: process.env.SMTP_PORT,
-  secure: process.env.SMTP_SECURE,
-  user: process.env.SMTP_USER,
-  // pass: hidden for security
-});
+console.log('SENDGRID_API_KEY exists:', !!process.env.SENDGRID_API_KEY);
+console.log('SENDGRID_FROM_EMAIL:', process.env.SENDGRID_FROM_EMAIL);
 
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || 'smtp.gmail.com',
-  port: parseInt(process.env.SMTP_PORT || '587'),
-  secure: process.env.SMTP_SECURE === 'true',
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASSWORD,
-  },
-  // Add a connection timeout to see if it helps
-  connectionTimeout: 10000, // 10 seconds
-});
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 async function sendTest() {
   try {
-    const info = await transporter.sendMail({
-      from: `"Test" <${process.env.SMTP_USER}>`,
-      to: 'davidmaina3713413@gmail.com', // or another email you control
+    const msg = {
+      to: 'davidmaina3713413@gmail.com',
+      from: {
+        email: process.env.SENDGRID_FROM_EMAIL,
+        name: process.env.SENDGRID_FROM_NAME || 'UniDigital Marketplace',
+      },
       subject: 'Test Email from UniDigital',
-      text: 'If you receive this, SMTP is working correctly.',
-    });
-    console.log('✅ Test email sent successfully!', info.messageId);
+      html: '<p>If you receive this, SendGrid is working correctly.</p>',
+    };
+    
+    const result = await sgMail.send(msg);
+    console.log('✅ Test email sent successfully!', result);
   } catch (error) {
-    console.error('❌ Failed to send test email:');
-    console.error(error);
+    console.error('❌ Test email failed:');
+    console.error(error.response?.body || error);
   }
 }
 
