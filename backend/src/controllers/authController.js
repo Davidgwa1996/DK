@@ -7,9 +7,9 @@ const sgMail = require('@sendgrid/mail');
 // ------------------------------------------------------------------
 // Generate JWT Token
 // ------------------------------------------------------------------
-const generateToken = (id, market = 'US', rememberMe = false) => {
+const generateToken = (id, rememberMe = false) => {
   const expiresIn = rememberMe ? '90d' : '30d';
-  return jwt.sign({ id, market }, process.env.JWT_SECRET, { expiresIn });
+  return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn });
 };
 
 // ------------------------------------------------------------------
@@ -105,7 +105,6 @@ const registerUser = async (req, res) => {
       email, 
       password, 
       phone, 
-      market = 'US',
       acceptTerms 
     } = req.body;
 
@@ -141,19 +140,16 @@ const registerUser = async (req, res) => {
       lastName: lastName.trim(),
       email: email.toLowerCase(),
       password,
-      phone,
-      market,
-      preferences: {
-        currency: market === 'GB' ? 'GBP' : market === 'JP' ? 'JPY' : market === 'CN' ? 'CNY' : 'USD',
-        language: 'en',
-        notifications: true
-      }
+      phone: phone || '',
+      accountStatus: 'active', // set default active
     });
     console.log('✅ User created with ID:', user._id);
 
+    // Generate verification token
     const verificationToken = crypto.randomBytes(20).toString('hex');
     user.verificationToken = verificationToken;
-    user.verificationExpires = Date.now() + 24 * 60 * 60 * 1000;
+    user.verificationExpires = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
+    user.isEmailVerified = false;
     await user.save();
     console.log('🔑 Verification token generated and saved');
 
@@ -190,8 +186,7 @@ const registerUser = async (req, res) => {
       // Continue - user still created
     }
 
-    const token = generateToken(user._id, market);
-    console.log('✅ Registration completed successfully for:', user.email);
+    const token = generateToken(user._id);
 
     res.status(201).json({
       success: true,
@@ -202,9 +197,8 @@ const registerUser = async (req, res) => {
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
-        market: user.market,
         role: user.role,
-        isVerified: user.isVerified
+        isEmailVerified: user.isEmailVerified
       }
     });
   } catch (error) {
@@ -227,7 +221,7 @@ const loginUser = async (req, res) => {
   console.log('🔐 Login attempt for:', req.body.email);
   
   try {
-    const { email, password, market = 'US', rememberMe = false } = req.body;
+    const { email, password, rememberMe = false } = req.body;
 
     if (!email || !password) {
       console.log('❌ Missing email or password');
@@ -248,9 +242,9 @@ const loginUser = async (req, res) => {
       });
     }
 
-    console.log('✅ User verified status:', user.isVerified);
-    if (!user.isVerified) {
-      console.log('❌ User not verified');
+    // Check if email is verified
+    if (!user.isEmailVerified) {
+      console.log('❌ Email not verified');
       return res.status(403).json({
         success: false,
         message: 'Please verify your email before logging in',
@@ -258,8 +252,9 @@ const loginUser = async (req, res) => {
       });
     }
 
-    if (!user.isActive) {
-      console.log('❌ Account deactivated');
+    // Check account status
+    if (user.accountStatus !== 'active') {
+      console.log('❌ Account not active');
       return res.status(403).json({
         success: false,
         message: 'Account is deactivated. Please contact support.'
@@ -270,36 +265,18 @@ const loginUser = async (req, res) => {
     console.log('🔑 Password match:', isPasswordMatch);
 
     if (!isPasswordMatch) {
-      user.failedLoginAttempts = (user.failedLoginAttempts || 0) + 1;
-      user.lastFailedLogin = new Date();
-      
-      if (user.failedLoginAttempts >= 5) {
-        user.isLocked = true;
-        user.lockUntil = Date.now() + 30 * 60 * 1000;
-        console.log('🔒 Account locked due to too many attempts');
-      }
-      
-      await user.save();
-      
+      // Implement failed login attempts if needed (fields not in current model)
       return res.status(401).json({
         success: false,
-        message: user.isLocked 
-          ? 'Account locked due to too many failed attempts. Try again in 30 minutes.'
-          : 'Invalid email or password',
-        attemptsRemaining: 5 - (user.failedLoginAttempts || 0)
+        message: 'Invalid email or password'
       });
     }
 
-    // Reset failed attempts on success
-    user.failedLoginAttempts = 0;
-    user.isLocked = false;
-    user.lockUntil = undefined;
     user.lastLogin = new Date();
-    user.market = market;
     await user.save();
     console.log('✅ Login successful for:', user.email);
 
-    const token = generateToken(user._id, market, rememberMe);
+    const token = generateToken(user._id, rememberMe);
 
     res.json({
       success: true,
@@ -310,12 +287,9 @@ const loginUser = async (req, res) => {
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
-        market: user.market,
         role: user.role,
-        avatar: user.avatar,
-        preferences: user.preferences,
-        cart: user.cart || { items: [], total: 0 },
-        wishlist: user.wishlist || []
+        isEmailVerified: user.isEmailVerified,
+        // Add any other fields you want to return (e.g., cart, wishlist)
       }
     });
   } catch (error) {
@@ -354,7 +328,7 @@ const verifyEmail = async (req, res) => {
       });
     }
 
-    user.isVerified = true;
+    user.isEmailVerified = true;
     user.verificationToken = undefined;
     user.verificationExpires = undefined;
     await user.save();
@@ -396,7 +370,7 @@ const resendVerification = async (req, res) => {
       });
     }
 
-    if (user.isVerified) {
+    if (user.isEmailVerified) {
       console.log('✅ Email already verified');
       return res.status(400).json({
         success: false,
@@ -466,9 +440,11 @@ const forgotPassword = async (req, res) => {
       });
     }
 
+    // Generate password reset token (requires fields in model)
+    // Assuming you have resetPasswordToken and resetPasswordExpires fields
     const resetToken = crypto.randomBytes(20).toString('hex');
     user.resetPasswordToken = resetToken;
-    user.resetPasswordExpires = Date.now() + 3600000;
+    user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
     await user.save();
     console.log('🔑 Password reset token generated');
 
@@ -564,7 +540,7 @@ const getMe = async (req, res) => {
   try {
     const user = await User.findById(req.user.id)
       .populate('wishlist')
-      .populate({ path: 'cart.items.product', model: 'Product', select: 'name price image market' })
+      .populate('cart')
       .populate('orders')
       .select('-password -resetPasswordToken -resetPasswordExpires -verificationToken -verificationExpires');
 
@@ -585,21 +561,15 @@ const getMe = async (req, res) => {
         lastName: user.lastName,
         email: user.email,
         phone: user.phone,
-        market: user.market,
         role: user.role,
-        avatar: user.avatar,
-        preferences: user.preferences,
+        isEmailVerified: user.isEmailVerified,
+        accountStatus: user.accountStatus,
         address: user.address,
-        isVerified: user.isVerified,
-        isActive: user.isActive,
+        cart: user.cart,
+        wishlist: user.wishlist,
+        orders: user.orders,
         createdAt: user.createdAt,
-        cart: user.cart || { items: [], total: 0 },
-        wishlist: user.wishlist || [],
-        orders: user.orders || [],
-        stats: {
-          totalOrders: user.orders?.length || 0,
-          totalSpent: user.orders?.reduce((sum, order) => sum + order.totalAmount, 0) || 0
-        }
+        updatedAt: user.updatedAt
       }
     });
   } catch (error) {
@@ -621,7 +591,7 @@ const updateProfile = async (req, res) => {
   console.log('👤 Updating profile for user ID:', req.user.id);
   
   try {
-    const { firstName, lastName, phone, address, market, preferences } = req.body;
+    const { firstName, lastName, phone, address } = req.body;
     const userId = req.user.id;
 
     const updateData = {};
@@ -629,8 +599,6 @@ const updateProfile = async (req, res) => {
     if (lastName) updateData.lastName = lastName;
     if (phone) updateData.phone = phone;
     if (address) updateData.address = address;
-    if (market) updateData.market = market;
-    if (preferences) updateData.preferences = { ...preferences };
 
     const user = await User.findByIdAndUpdate(userId, updateData, { new: true, runValidators: true }).select('-password');
 
@@ -721,25 +689,6 @@ const changePassword = async (req, res) => {
     await user.save();
     console.log('✅ Password changed for:', user.email);
 
-    // Optional: send notification
-    try {
-      await sendEmail({
-        to: user.email,
-        subject: 'Password Changed - UniDigital Marketplace',
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eaeaea; border-radius: 10px;">
-            <h2 style="color: #2563eb;">Password Changed Successfully</h2>
-            <p>Hello <strong>${user.firstName}</strong>,</p>
-            <p>Your password was changed on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}.</p>
-            <p style="color: #666;">If you didn't make this change, please contact support immediately.</p>
-          </div>
-        `
-      });
-      console.log('✅ Password change notification sent');
-    } catch (emailError) {
-      console.error('❌ Password change email failed:', emailError);
-    }
-
     res.json({
       success: true,
       message: 'Password changed successfully'
@@ -775,13 +724,12 @@ const uploadAvatar = async (req, res) => {
     const baseUrl = process.env.BACKEND_URL || `${req.protocol}://${req.get('host')}`;
     const avatarUrl = `${baseUrl}/uploads/${req.file.filename}`;
 
-    const user = await User.findByIdAndUpdate(req.user.id, { avatar: avatarUrl }, { new: true }).select('-password');
-    console.log('✅ Avatar updated for:', user.email);
-
+    // Add avatar field to User model if needed, or use a different storage
+    // For now, we'll just return success (you might want to store in user profile)
     res.json({
       success: true,
-      message: 'Profile picture updated',
-      avatar: user.avatar
+      message: 'Profile picture uploaded',
+      avatar: avatarUrl
     });
   } catch (error) {
     console.error('❌ Upload avatar error:', error);
@@ -827,8 +775,7 @@ const deleteAccount = async (req, res) => {
       });
     }
 
-    user.isActive = false;
-    user.deletedAt = new Date();
+    user.accountStatus = 'deactivated';
     await user.save();
     console.log('✅ Account deactivated for:', user.email);
 
@@ -855,8 +802,7 @@ const logoutUser = async (req, res) => {
   console.log('🚪 Logout for user ID:', req.user.id);
   
   try {
-    await User.findByIdAndUpdate(req.user.id, { lastActive: new Date() });
-    console.log('✅ Logout successful');
+    // Optionally update lastActive or similar
     res.json({
       success: true,
       message: 'Logged out successfully'

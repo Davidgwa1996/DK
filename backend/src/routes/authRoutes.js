@@ -57,7 +57,7 @@ const registerValidation = [
     .matches(/^[a-zA-Z\s\-'.]+$/).withMessage('First name can only contain letters, spaces, hyphens, apostrophes, and periods'),
 
   body('lastName')
-    .notEmpty().withMessage('Last name is required')            // ✅ required – matches controller
+    .notEmpty().withMessage('Last name is required')
     .trim()
     .isLength({ min: 2, max: 50 }).withMessage('Last name must be between 2 and 50 characters')
     .matches(/^[a-zA-Z\s\-'.]+$/).withMessage('Last name can only contain letters, spaces, hyphens, apostrophes, and periods'),
@@ -141,26 +141,7 @@ const updateProfileValidation = [
   body('phone')
     .optional()
     .isMobilePhone().withMessage('Please include a valid phone number')
-    .trim(),
-
-  body('market')
-    .optional()
-    .isIn(['US', 'GB', 'CN', 'JP', 'EU', 'AU', 'CA', 'global'])
-    .withMessage('Invalid market selection'),
-
-  body('preferences.currency')
-    .optional()
-    .isIn(['USD', 'GBP', 'EUR', 'JPY', 'CNY', 'CAD', 'AUD'])
-    .withMessage('Invalid currency'),
-
-  body('preferences.language')
-    .optional()
-    .isIn(['en', 'es', 'fr', 'de', 'zh', 'ja'])
-    .withMessage('Invalid language'),
-
-  body('preferences.notifications')
-    .optional()
-    .isBoolean().withMessage('Notifications must be true or false')
+    .trim()
 ];
 
 const changePasswordValidation = [
@@ -205,7 +186,7 @@ router.post('/reset-password/:token', resetPasswordValidation, validate, resetPa
 router.post('/resend-verification', resendVerificationValidation, validate, resendVerification);
 router.get('/verify-email/:token', verifyEmail);
 
-// Password strength check endpoint (useful for frontend)
+// Password strength check endpoint
 router.post('/check-password-strength', [
   body('password').notEmpty().withMessage('Password is required')
 ], validate, (req, res) => {
@@ -220,13 +201,13 @@ router.post('/check-password-strength', [
   });
 });
 
-// Email validation endpoint (check availability)
+// Email availability check
 router.post('/validate-email', [
   body('email').isEmail().withMessage('Please include a valid email address')
 ], validate, async (req, res) => {
   const { email } = req.body;
-  // In production, query your database
-  const emailExists = false; // replace with actual DB check
+  // Replace with actual database check
+  const emailExists = false;
   res.json({
     success: true,
     isValid: true,
@@ -305,7 +286,7 @@ router.get('/health', (req, res) => {
 });
 
 // ------------------------------------------------------------------
-// OAUTH ROUTES (stubs – implement fully later)
+// OAUTH ROUTES (stubs)
 // ------------------------------------------------------------------
 router.get('/google', (req, res) => {
   res.status(501).json({ success: false, message: 'Google OAuth not implemented yet' });
@@ -324,7 +305,7 @@ router.get('/apple/callback', (req, res) => {
 });
 
 // ------------------------------------------------------------------
-// PROTECTED ROUTES (require authentication)
+// PROTECTED ROUTES
 // ------------------------------------------------------------------
 router.get('/me', protect, getMe);
 router.put('/update-profile', protect, updateProfileValidation, validate, updateProfile);

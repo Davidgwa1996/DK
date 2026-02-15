@@ -49,6 +49,15 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  // ✅ New fields for email verification
+  verificationToken: {
+    type: String,
+    default: null
+  },
+  verificationExpires: {
+    type: Date,
+    default: null
+  },
   cart: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Cart'
