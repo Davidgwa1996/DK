@@ -13,12 +13,27 @@ const generateToken = (id, market = 'US', rememberMe = false) => {
 };
 
 // ------------------------------------------------------------------
-// SendGrid configuration
+// SendGrid configuration with validation
 // ------------------------------------------------------------------
-sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+if (!process.env.SENDGRID_API_KEY) {
+  console.error('❌ SENDGRID_API_KEY is not set in environment variables');
+} else if (!process.env.SENDGRID_API_KEY.startsWith('SG.')) {
+  console.error('❌ SENDGRID_API_KEY must start with "SG."');
+} else {
+  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+  console.log('✅ SendGrid API key configured');
+}
 
-// Helper to send emails using SendGrid
+// Helper to send emails using SendGrid with proper error handling
 const sendEmail = async ({ to, subject, html }) => {
+  // Validate required fields
+  if (!process.env.SENDGRID_FROM_EMAIL) {
+    throw new Error('SENDGRID_FROM_EMAIL is not set');
+  }
+  if (!process.env.SENDGRID_API_KEY) {
+    throw new Error('SENDGRID_API_KEY is not set');
+  }
+
   const msg = {
     to,
     from: {
@@ -28,11 +43,15 @@ const sendEmail = async ({ to, subject, html }) => {
     subject,
     html,
   };
-  await sgMail.send(msg);
+  
+  console.log('📧 Attempting to send email:', { to, subject, from: msg.from });
+  const result = await sgMail.send(msg);
+  console.log('✅ Email sent successfully:', result);
+  return result;
 };
 
 // ------------------------------------------------------------------
-// @desc    Register user with market preference
+// @desc    Register user
 // @route   POST /api/auth/register
 // @access  Public
 // ------------------------------------------------------------------
@@ -98,7 +117,7 @@ const registerUser = async (req, res) => {
     user.verificationExpires = Date.now() + 24 * 60 * 60 * 1000;
     await user.save();
 
-    // Send verification email using SendGrid
+    // Send verification email (non‑blocking)
     try {
       const verificationUrl = `${process.env.FRONTEND_URL}/verify-email/${verificationToken}`;
       await sendEmail({
@@ -121,9 +140,10 @@ const registerUser = async (req, res) => {
           </div>
         `
       });
+      console.log('✅ Verification email sent to:', user.email);
     } catch (emailError) {
-      console.error('Verification email failed:', emailError);
-      // User still created, continue
+      console.error('❌ Verification email failed:', emailError.message);
+      console.error('Full error:', emailError);
     }
 
     const token = generateToken(user._id, market);
@@ -143,7 +163,7 @@ const registerUser = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Register error:', error);
+    console.error('❌ Register error:', error);
     res.status(500).json({
       success: false,
       message: 'Registration failed. Please try again.',
@@ -592,7 +612,7 @@ const changePassword = async (req, res) => {
     user.password = newPassword;
     await user.save();
 
-    // Optional: send notification using SendGrid
+    // Optional: send notification
     try {
       await sendEmail({
         to: user.email,
