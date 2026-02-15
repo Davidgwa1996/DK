@@ -3,7 +3,7 @@ import { Link, useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 // ✅ Use environment variable – this will be your live backend URL in production
-const API_BASE = process.env.REACT_APP_API_URL || 'https://unidigitalcom-backend.onrender.com/api';
+const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
 const VerifyEmail = () => {
   const { token } = useParams();
