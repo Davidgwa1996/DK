@@ -14,7 +14,7 @@ const AuthPage = () => {
   const [lastName, setLastName] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [acceptTerms, setAcceptTerms] = useState(false);
-  const [country, setCountry] = useState(''); // New state for country
+  const [country, setCountry] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -25,10 +25,7 @@ const AuthPage = () => {
   useEffect(() => {
     const detectCountry = () => {
       try {
-        // Try to detect from timezone
         const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-        console.log('Detected timezone:', timezone);
-        
         if (timezone.includes('Europe/London') || timezone.includes('GB') || timezone.includes('Dublin')) {
           setCountry('GB');
         } else if (timezone.includes('Europe/')) {
@@ -40,22 +37,14 @@ const AuthPage = () => {
         } else if (timezone.includes('Asia/Shanghai') || timezone.includes('China')) {
           setCountry('CN');
         } else {
-          // Fallback to browser language
           const lang = navigator.language || navigator.userLanguage;
-          if (lang.includes('en-GB')) {
-            setCountry('GB');
-          } else if (lang.includes('en-US')) {
-            setCountry('US');
-          } else {
-            setCountry('US'); // Default fallback
-          }
+          setCountry(lang.includes('en-GB') ? 'GB' : 'US');
         }
       } catch (error) {
         console.error('Country detection failed:', error);
-        setCountry('US'); // Default fallback
+        setCountry('US');
       }
     };
-
     detectCountry();
   }, []);
 
@@ -131,18 +120,17 @@ const AuthPage = () => {
         setSuccess('Login successful! Redirecting...');
         setTimeout(() => navigate('/'), 1500);
       } else {
-        // Send all required fields including country/market
         const response = await axios.post(`${API_BASE}/auth/register`, {
           firstName: firstName.trim(),
           lastName: lastName.trim(),
           email: email.trim(),
           password,
           acceptTerms: 'true',
-          market: country, // Send the selected/detected country
-          phone: '', // Optional, can be added later
+          market: country,
+          phone: '',
         });
-
-        setSuccess('Registration successful! You can now login.');
+        // Use the exact message from backend
+        setSuccess(response.data.message || 'Registration successful! Please check your email to verify your account.');
         setFirstName('');
         setLastName('');
         setEmail('');
@@ -163,11 +151,11 @@ const AuthPage = () => {
   };
 
   const handleGoogleLogin = () => {
-    window.location.href = `${API_BASE}/auth/google`;
+    setError('Google login is not yet available. Please use email registration.');
   };
 
   const handleAppleLogin = () => {
-    setError('Apple login is not yet available. Please use Google or email.');
+    setError('Apple login is not yet available. Please use email registration.');
   };
 
   const renderPasswordStrength = () => {
@@ -262,8 +250,6 @@ const AuthPage = () => {
                       disabled={loading}
                     />
                   </div>
-                  
-                  {/* ✅ NEW: Country Selection Dropdown */}
                   <div className="form-group">
                     <label htmlFor="country">Country *</label>
                     <select
